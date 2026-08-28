@@ -433,9 +433,38 @@ body {
     z-index: 2;
     pointer-events: none;
     transition: transform .12s ease;
-    animation: pieceIn .22s cubic-bezier(.2, .9, .3, 1.3);
+    will-change: transform;
 }
-@keyframes pieceIn { from { transform: scale(.72); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+/* Il pezzo che si sposta viaggia sopra gli altri */
+.piece.sliding { z-index: 6; }
+
+/* Comparsa (nuovo pezzo, cattura, inizio partita) */
+.piece.fx-appear { animation: fxAppear .3s cubic-bezier(.2, .9, .3, 1.3); }
+@keyframes fxAppear {
+    from { transform: scale(.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+/* Trasformazione sul posto: la pedina "sboccia" con un lampo magico */
+.piece.fx-morph { animation: fxMorph .52s cubic-bezier(.25, .8, .3, 1.2); }
+@keyframes fxMorph {
+    0%   { transform: scale(1) rotate(0); filter: brightness(1); }
+    30%  { transform: scale(.55) rotate(-8deg); filter: brightness(2.4) drop-shadow(0 0 12px var(--violet)); }
+    65%  { transform: scale(1.22) rotate(4deg); filter: brightness(1.8) drop-shadow(0 0 18px var(--violet)); }
+    100% { transform: scale(1) rotate(0); filter: brightness(1); }
+}
+
+/* Cattura: la casella lampeggia di rosso */
+.cell.fx-capture::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    border-radius: 2px;
+    animation: fxCapture .46s ease-out;
+}
+@keyframes fxCapture {
+    0%   { background: rgba(216, 31, 42, .72); box-shadow: inset 0 0 0 4px rgba(255, 120, 120, .9); }
+    100% { background: rgba(216, 31, 42, 0); box-shadow: inset 0 0 0 0 rgba(255, 120, 120, 0); }
+}
 .piece.white {
     color: #fdfefe;
     text-shadow:
@@ -602,6 +631,40 @@ body {
 .game-card.disabled { opacity: .42; filter: grayscale(.55); cursor: not-allowed; }
 .game-card.disabled:hover { transform: none; box-shadow: 0 8px 18px rgba(0, 0, 0, .45); }
 
+/* Filigrana: la figura della pedina evocata, grande e trasparente,
+   dietro il contenuto della carta. Si illumina al passaggio e da' selezionata. */
+.card-watermark {
+    position: absolute;
+    left: 50%; top: 56%;
+    transform: translate(-50%, -50%);
+    font-size: 118px;
+    line-height: 1;
+    color: var(--card-accent);
+    opacity: .13;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 0 26px var(--card-accent);
+    transition: opacity .3s ease, transform .3s cubic-bezier(.2, .9, .3, 1.2), filter .3s ease;
+    animation: wmBreathe 7s ease-in-out infinite;
+}
+@keyframes wmBreathe {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50%      { filter: drop-shadow(0 0 14px var(--card-accent)); }
+}
+.game-card:hover .card-watermark {
+    opacity: .2;
+    transform: translate(-50%, -50%) scale(1.07) rotate(-2deg);
+}
+.game-card.selected .card-watermark {
+    opacity: .26;
+    transform: translate(-50%, -50%) scale(1.1) rotate(-3deg);
+}
+.game-card.disabled .card-watermark { opacity: .08; }
+
+/* Il contenuto resta sopra la filigrana */
+.card-art, .card-name, .card-text { position: relative; z-index: 1; }
+
 .card-art {
     width: 100%; height: 48px;
     display: grid; place-items: center;
@@ -625,11 +688,16 @@ body {
     padding-bottom: 6px; margin-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, .08);
     width: 100%;
+    text-shadow: 0 1px 4px rgba(6, 9, 15, .85);
 }
-.card-text { font-size: .66rem; line-height: 1.35; color: var(--muted); flex: 1; }
+.card-text {
+    font-size: .66rem; line-height: 1.35; flex: 1;
+    color: #9db0c7;
+    text-shadow: 0 1px 3px rgba(6, 9, 15, .9);
+}
 
 .card-badge {
-    position: absolute; top: 7px; right: 7px;
+    position: absolute; top: 7px; right: 7px; z-index: 2;
     font-size: .53rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
     padding: 2px 5px; border-radius: 4px;
     background: rgba(232, 185, 85, .18); color: var(--gold); border: 1px solid rgba(232, 185, 85, .45);
@@ -653,6 +721,13 @@ body {
     pointer-events: none;
 }
 @keyframes shine { from { background-position: 200% 0; } to { background-position: -60% 0; } }
+
+/* Carta appena pescata: entra dal mazzo, non ricostruisce tutta la mano */
+.game-card.card-enter { animation: cardEnter .42s cubic-bezier(.2, .9, .3, 1.25); }
+@keyframes cardEnter {
+    from { transform: translateY(26px) scale(.86) rotate(-4deg); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+}
 
 .empty-hand { color: var(--muted); font-size: .84rem; padding: 24px; text-align: center; width: 100%; }
 

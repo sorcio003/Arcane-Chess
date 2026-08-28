@@ -268,6 +268,14 @@ const TRAP_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' 
     '<ellipse cx="14.2" cy="15.4" rx=".95" ry="1.5" fill="#ff9a9a" opacity=".75"/>' +
     '</svg>';
 
+/* Figura della pedina evocata, in filigrana dietro le carte di trasformazione */
+const WATERMARK = {
+    sp_tower: '♜',
+    sp_queen: '♛',
+    sp_bishop: '♝',
+    sp_knight: '♞'
+};
+
 const CARD_META = {
     mov:       { kind: 'action', art: '<i class="fas fa-arrows-up-down-left-right"></i>' },
     atk:       { kind: 'action', art: '<i class="fas fa-crosshairs"></i>' },
@@ -316,6 +324,7 @@ let lastMove = null;
 let gameOver = false;
 let winner = null;
 let logs = [];
+let logSeq = 0;              /* id progressivo delle righe di cronologia */
 let names = { white: '', black: '' };
 let counts = { myDeck: 0, myDiscard: 0, myHand: 0, oppDeck: 0, oppHand: 0 };
 let botGuard = 0;
@@ -420,6 +429,7 @@ function startGame(newMode, myName, oppName) {
         actionPoints = 1;
         maxActionPoints = 1;
         logs = [];
+        logSeq = 0;          /* riparte da capo: la cronologia a schermo si ricostruisce */
         lastMove = null;
         gameOver = false;
         winner = null;
@@ -825,7 +835,21 @@ function playBotTurn() {
     if (turn === 'black' && actionPoints > 0 && !gameOver) setTimeout(playBotTurn, 700);
 }
 
-/* ============================== RENDER ============================== */
+/* ============================== RENDER ==============================
+   Rendering incrementale: la scacchiera e le carte vengono costruite UNA
+   volta sola, poi si aggiorna solo cio' che e' davvero cambiato. Cosi' i
+   glifi e le icone non "sfarfallano" ad ogni mossa e le animazioni
+   partono solo sul pezzo che si muove o che si trasforma. */
+
+let cellEls = [];            /* riferimenti alle caselle, indicizzati [r][c] */
+let gridFlipped = null;      /* orientamento con cui e' stata costruita la griglia */
+let renderedMoveKey = '';    /* ultima mossa gia' animata */
+let lastLogId = -1;          /* ultima riga di cronologia gia' scritta a schermo */
+
+function setText(el, value) { if (el && el.textContent !== value) el.textContent = value; }
+function setHtml(el, value) { if (el && el.innerHTML !== value) el.innerHTML = value; }
+function setClass(el, name, on) { if (el) el.classList.toggle(name, !!on); }
+
 function refreshCounts() {
     if (mode === 'guest') return;             /* i conteggi arrivano dall'host */
     const opp = opposite(myColor);
@@ -847,9 +871,12 @@ function renderAll() {
     if (mode === 'host') syncToGuest();
 }
 
-function renderBoard() {
+/* ---------- Scacchiera ---------- */
+function buildBoardGrid() {
     const bd = $('board');
     bd.innerHTML = '';
+    cellEls = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+
     for (let i = 0; i < BOARD_SIZE; i++) {
         for (let j = 0; j < BOARD_SIZE; j++) {
             const r = flipped ? BOARD_SIZE - 1 - i : i;
@@ -859,6 +886,7 @@ function renderBoard() {
             cell.className = 'cell ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
             cell.dataset.r = r;
             cell.dataset.c = c;
+            cell.dataset.sig = '';
 
             if (j === 0) {
                 const rk = document.createElement('span');
@@ -873,66 +901,167 @@ function renderBoard() {
                 cell.appendChild(fl);
             }
 
-            if (lastMove && ((lastMove.sr === r && lastMove.sc === c) || (lastMove.dr === r && lastMove.dc === c))) {
-                cell.classList.add('last-move');
-            }
-
-            const piece = board[r] && board[r][c];
-            if (piece) {
-                const span = document.createElement('span');
-                span.className = 'piece ' + piece.color;
-                span.textContent = GLYPH[piece.type];
-                cell.appendChild(span);
-                if (piece.hasTrap) {
-                    const marker = document.createElement('span');
-                    marker.className = 'trap-marker';
-                    marker.title = t('cards.sp_trap.d');
-                    marker.innerHTML = TRAP_SVG;
-                    cell.appendChild(marker);
-                }
-            }
-
             cell.addEventListener('click', () => handleCellClick(r, c));
+            cellEls[r][c] = cell;
             bd.appendChild(cell);
         }
     }
-    applyHighlights();
+    gridFlipped = flipped;
 }
 
-function cellEl(r, c) { return document.querySelector(".cell[data-r='" + r + "'][data-c='" + c + "']"); }
+function cellEl(r, c) { return cellEls[r] ? cellEls[r][c] : null; }
 
-function applyHighlights() {
-    if (!isMyTurn() || selectedCard === null) return;
+/* Allinea una casella allo stato del pezzo. Ritorna il tipo di cambiamento. */
+function syncCell(r, c) {
+    const el = cellEls[r][c];
+    const p = board[r] && board[r][c];
+    const sig = p ? p.type + '|' + p.color + (p.hasTrap ? '|T' : '') : '';
+    const prev = el.dataset.sig;
+    if (prev === sig) return 'same';
+    el.dataset.sig = sig;
+
+    let pieceEl = el.querySelector('.piece');
+    let marker = el.querySelector('.trap-marker');
+
+    if (!p) {
+        if (pieceEl) pieceEl.remove();
+        if (marker) marker.remove();
+        return 'clear';
+    }
+
+    if (!pieceEl) {
+        pieceEl = document.createElement('span');
+        el.appendChild(pieceEl);
+    }
+    const cls = 'piece ' + p.color;
+    if (pieceEl.className !== cls) pieceEl.className = cls;
+    setText(pieceEl, GLYPH[p.type]);
+
+    if (p.hasTrap && !marker) {
+        marker = document.createElement('span');
+        marker.className = 'trap-marker';
+        marker.title = t('cards.sp_trap.d');
+        marker.innerHTML = TRAP_SVG;
+        el.appendChild(marker);
+    } else if (!p.hasTrap && marker) {
+        marker.remove();
+    }
+
+    if (!prev) return 'add';
+    return prev.split('|')[1] === p.color ? 'morph' : 'add';
+}
+
+function renderBoard() {
+    if (!cellEls.length || gridFlipped !== flipped) buildBoardGrid();
+
+    const mv = lastMove;
+    const moveKey = mv ? [mv.sr, mv.sc, mv.dr, mv.dc].join(':') : '';
+    const isNewMove = !!moveKey && moveKey !== renderedMoveKey;
+    const sliding = isNewMove && mv && (mv.sr !== mv.dr || mv.sc !== mv.dc);
+
+    /* firme precedenti: servono per capire se la casella d'arrivo era occupata */
+    const destWasEnemy = sliding && (() => {
+        const prev = cellEls[mv.dr][mv.dc].dataset.sig;
+        const mover = board[mv.dr] && board[mv.dr][mv.dc];
+        return !!prev && !!mover && prev.split('|')[1] !== mover.color;
+    })();
+
+    const pops = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const change = syncCell(r, c);
+            if (change === 'same' || change === 'clear') continue;
+            if (sliding && r === mv.dr && c === mv.dc) continue;   /* lo anima lo scivolamento */
+            pops.push({ el: cellEls[r][c], kind: change });
+        }
+    }
+
+    if (sliding) {
+        animateSlide(mv);
+        if (destWasEnemy) flashCapture(cellEls[mv.dr][mv.dc]);
+    }
+    pops.forEach(p => pulse(p.el.querySelector('.piece'), p.kind === 'morph' ? 'fx-morph' : 'fx-appear'));
+
+    renderedMoveKey = moveKey;
+    paintHighlights();
+}
+
+/* Il pezzo parte dalla casella d'origine e scivola in quella d'arrivo */
+function animateSlide(mv) {
+    const from = cellEls[mv.sr] && cellEls[mv.sr][mv.sc];
+    const to = cellEls[mv.dr] && cellEls[mv.dr][mv.dc];
+    if (!from || !to) return;
+    const piece = to.querySelector('.piece');
+    if (!piece) return;
+
+    const dx = from.offsetLeft - to.offsetLeft;
+    const dy = from.offsetTop - to.offsetTop;
+    if (!dx && !dy) return;
+
+    piece.classList.add('sliding');
+    piece.style.transition = 'none';
+    piece.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+
+    requestAnimationFrame(() => {
+        piece.style.transition = 'transform .28s cubic-bezier(.22,.75,.25,1)';
+        piece.style.transform = 'translate(0,0)';
+    });
+    setTimeout(() => {
+        piece.classList.remove('sliding');
+        piece.style.transition = '';
+        piece.style.transform = '';
+    }, 340);
+}
+
+function flashCapture(el) {
+    if (!el) return;
+    el.classList.remove('fx-capture');
+    void el.offsetWidth;
+    el.classList.add('fx-capture');
+    setTimeout(() => el.classList.remove('fx-capture'), 460);
+}
+
+function pulse(el, cls) {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;                 /* forza il riavvio dell'animazione */
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 520);
+}
+
+/* ---------- Evidenziazioni ---------- */
+/* Calcola una mappa "r,c" -> classe, poi la applica senza ricostruire nulla:
+   le caselle immutate non perdono ne' riacquistano classi, quindi le
+   animazioni in corso non ripartono. */
+function computeHighlights() {
+    const marks = {};
+    if (!isMyTurn() || selectedCard === null) return marks;
     const card = players[myColor].hand[selectedCard];
-    if (!card) return;
+    if (!card) return marks;
 
     /* Carte da lanciare: evidenzio le mie pedine bersagliabili */
     if (IN_PLACE_CARDS.indexOf(card.id) !== -1) {
         for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
             const p = board[r][c];
-            if (p && p.color === myColor && canCastOn(p, card.id)) {
-                const el = cellEl(r, c); if (el) el.classList.add('hl-cast');
-            }
+            if (p && p.color === myColor && canCastOn(p, card.id)) marks[r + ',' + c] = 'hl-cast';
         }
-        return;
+        return marks;
     }
 
     if (selectedCell) {
         const src = board[selectedCell.r][selectedCell.c];
-        const selEl = cellEl(selectedCell.r, selectedCell.c);
-        if (selEl) selEl.classList.add('selected');
-        if (!src) return;
+        marks[selectedCell.r + ',' + selectedCell.c] = 'selected';
+        if (!src) return marks;
         for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
             const target = board[r][c];
             if (isValidMove(src, selectedCell.r, selectedCell.c, r, c, card.id, target)) {
-                const el = cellEl(r, c);
-                if (el) el.classList.add(target ? 'hl-capture' : 'hl-move');
+                marks[r + ',' + c] = target ? 'hl-capture' : 'hl-move';
             }
         }
-        return;
+        return marks;
     }
 
-    /* Nessuna pedina scelta: evidenzio quelle che hanno almeno una mossa con questa carta */
+    /* Nessuna pedina scelta: evidenzio quelle che hanno almeno una mossa */
     for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
         const p = board[r][c];
         if (!p || p.color !== myColor) continue;
@@ -942,114 +1071,183 @@ function applyHighlights() {
                 if (isValidMove(p, r, c, tr, tc, card.id, board[tr][tc])) can = true;
             }
         }
-        if (can) { const el = cellEl(r, c); if (el) el.classList.add('movable'); }
+        if (can) marks[r + ',' + c] = 'movable';
     }
+    return marks;
+}
+
+function paintHighlights() {
+    const marks = computeHighlights();
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const el = cellEls[r][c];
+            const k = marks[r + ',' + c] || '';
+            setClass(el, 'selected', k === 'selected');
+            setClass(el, 'hl-move', k === 'hl-move');
+            setClass(el, 'hl-capture', k === 'hl-capture');
+            setClass(el, 'hl-cast', k === 'hl-cast');
+            setClass(el, 'movable', k === 'movable');
+            setClass(el, 'last-move', !!lastMove &&
+                ((lastMove.sr === r && lastMove.sc === c) || (lastMove.dr === r && lastMove.dc === c)));
+        }
+    }
+}
+
+/* ---------- Mano ---------- */
+function buildCardEl(card) {
+    const meta = CARD_META[card.id] || { kind: 'action', art: '' };
+    const text = t('cards.' + card.id);
+    const free = FREE_CARDS.indexOf(card.id) !== -1;
+    const wm = WATERMARK[card.id];
+
+    const el = document.createElement('div');
+    el.className = 'game-card kind-' + meta.kind;
+    el.dataset.uid = card.uid;
+    el.dataset.lang = lang;
+    el.innerHTML =
+        (wm ? '<span class="card-watermark">' + wm + '</span>' : '') +
+        (free ? '<span class="card-badge free">FREE</span>'
+              : (meta.kind === 'legend' ? '<span class="card-badge">EPIC</span>' : '')) +
+        '<div class="card-art">' + meta.art + '</div>' +
+        '<div class="card-name">' + text.n + '</div>' +
+        '<div class="card-text">' + text.d + '</div>';
+    return el;
 }
 
 function renderHand() {
     const handDiv = $('player-hand');
-    handDiv.innerHTML = '';
     const hand = players[myColor].hand;
 
     if (!hand.length) {
-        const empty = document.createElement('div');
-        empty.className = 'empty-hand';
-        empty.textContent = '—';
-        handDiv.appendChild(empty);
+        if (!handDiv.querySelector('.empty-hand')) handDiv.innerHTML = '<div class="empty-hand">&mdash;</div>';
         return;
     }
+    const placeholder = handDiv.querySelector('.empty-hand');
+    if (placeholder) placeholder.remove();
+
+    /* via le carte non piu' in mano */
+    const alive = {};
+    hand.forEach(c => { alive[c.uid] = true; });
+    Array.prototype.slice.call(handDiv.children).forEach(el => {
+        if (!alive[el.dataset.uid]) el.remove();
+    });
 
     hand.forEach((card, index) => {
-        const meta = CARD_META[card.id] || { kind: 'action', art: '' };
-        const text = t('cards.' + card.id);
+        let el = handDiv.querySelector('.game-card[data-uid="' + card.uid + '"]');
+        if (!el) {
+            el = buildCardEl(card);
+            el.classList.add('card-enter');
+            setTimeout(() => el.classList.remove('card-enter'), 460);
+        } else if (el.dataset.lang !== lang) {
+            el.innerHTML = buildCardEl(card).innerHTML;   /* solo al cambio lingua */
+            el.dataset.lang = lang;
+        }
+        if (handDiv.children[index] !== el) handDiv.insertBefore(el, handDiv.children[index] || null);
+
         const free = FREE_CARDS.indexOf(card.id) !== -1;
-        const el = document.createElement('div');
-        el.className = 'game-card kind-' + meta.kind;
-        if (selectedCard === index) el.classList.add('selected');
-        if (!isMyTurn() || (!free && actionPoints <= 0)) el.classList.add('disabled');
-
-        el.innerHTML =
-            (free ? '<span class="card-badge free">FREE</span>' : (meta.kind === 'legend' ? '<span class="card-badge">EPIC</span>' : '')) +
-            '<div class="card-art">' + meta.art + '</div>' +
-            '<div class="card-name">' + text.n + '</div>' +
-            '<div class="card-text">' + text.d + '</div>';
-
-        el.addEventListener('click', () => handleCardClick(index));
-        handDiv.appendChild(el);
+        setClass(el, 'selected', selectedCard === index);
+        setClass(el, 'disabled', !isMyTurn() || (!free && actionPoints <= 0));
+        el.onclick = () => handleCardClick(index);
     });
 }
 
+/* ---------- HUD ---------- */
 function renderHUD() {
     const opp = opposite(myColor);
     const myName = names[myColor] || t('game.you');
     const oppName = names[opp] || (mode === 'bot' ? t('game.bot') : t('game.opponent'));
 
-    $('me-name').textContent = myName;
-    $('opp-name').textContent = oppName;
-    $('me-avatar').innerHTML = mode === 'bot' ? '<i class="fas fa-user"></i>' : escapeHtml(myName.charAt(0).toUpperCase());
-    $('opp-avatar').innerHTML = mode === 'bot' ? '<i class="fas fa-robot"></i>' : escapeHtml(oppName.charAt(0).toUpperCase());
+    setText($('me-name'), myName);
+    setText($('opp-name'), oppName);
+    setHtml($('me-avatar'), mode === 'bot' ? '<i class="fas fa-user"></i>' : escapeHtml(myName.charAt(0).toUpperCase()));
+    setHtml($('opp-avatar'), mode === 'bot' ? '<i class="fas fa-robot"></i>' : escapeHtml(oppName.charAt(0).toUpperCase()));
 
-    $('me-side').textContent = t('game.' + myColor);
+    setText($('me-side'), t('game.' + myColor));
     $('me-side').className = 'side-chip ' + myColor;
-    $('opp-side').textContent = t('game.' + opp);
+    setText($('opp-side'), t('game.' + opp));
     $('opp-side').className = 'side-chip ' + opp;
 
-    $('me-deck').textContent = counts.myDeck;
-    $('me-discard').textContent = counts.myDiscard;
-    $('opp-deck').textContent = counts.oppDeck;
-    $('opp-hand').textContent = counts.oppHand;
+    setText($('me-deck'), String(counts.myDeck));
+    setText($('me-discard'), String(counts.myDiscard));
+    setText($('opp-deck'), String(counts.oppDeck));
+    setText($('opp-hand'), String(counts.oppHand));
 
     const myTurn = isMyTurn();
-    $('bar-me').classList.toggle('active-turn', myTurn);
-    $('bar-opp').classList.toggle('active-turn', !myTurn && !gameOver);
-    $('opp-thinking').classList.toggle('on', !myTurn && !gameOver);
-    $('me-status').textContent = gameOver ? '' : (myTurn ? t('game.playing') : t('game.waiting'));
-    $('opp-status').textContent = gameOver ? '' : (myTurn ? t('game.waiting') : (mode === 'bot' ? t('game.thinking') : t('game.playing')));
+    setClass($('bar-me'), 'active-turn', myTurn);
+    setClass($('bar-opp'), 'active-turn', !myTurn && !gameOver);
+    setClass($('opp-thinking'), 'on', !myTurn && !gameOver);
+    setText($('me-status'), gameOver ? '' : (myTurn ? t('game.playing') : t('game.waiting')));
+    setText($('opp-status'), gameOver ? '' : (myTurn ? t('game.waiting') : (mode === 'bot' ? t('game.thinking') : t('game.playing'))));
 
-    /* Punti azione */
+    /* Punti azione: aggiungo/tolgo solo i pip necessari */
     const pips = $('ap-pips');
-    pips.innerHTML = '';
     const total = Math.max(maxActionPoints, actionPoints, 1);
-    for (let i = 0; i < total; i++) {
+    while (pips.childElementCount > total) pips.removeChild(pips.lastChild);
+    while (pips.childElementCount < total) {
         const pip = document.createElement('span');
-        pip.className = 'ap-pip' + (i < actionPoints ? ' on' : '');
+        pip.className = 'ap-pip';
         pips.appendChild(pip);
     }
-    $('ap-now').textContent = myTurn ? actionPoints : 0;
-    $('ap-max').textContent = myTurn ? total : 1;
-    $('ap-box').classList.toggle('charged', myTurn && actionPoints > 1);
-    $('ap-box').classList.toggle('spent', !myTurn || actionPoints === 0);
+    Array.prototype.forEach.call(pips.children, (pip, i) => setClass(pip, 'on', i < actionPoints));
+
+    setText($('ap-now'), String(myTurn ? actionPoints : 0));
+    setText($('ap-max'), String(myTurn ? total : 1));
+    setClass($('ap-box'), 'charged', myTurn && actionPoints > 1);
+    setClass($('ap-box'), 'spent', !myTurn || actionPoints === 0);
 
     /* Banner turno */
     const banner = $('turn-banner');
-    banner.className = 'turn-banner' + (gameOver ? ' over' : (myTurn ? ' mine' : ''));
-    $('turn-banner-txt').textContent = gameOver
-        ? t('game.gameOver')
-        : (myTurn ? t('game.yourTurn') : t('game.oppTurn'));
-    banner.querySelector('i').className = gameOver ? 'fas fa-flag' : (myTurn ? 'fas fa-play' : 'fas fa-hourglass-half');
+    const bannerCls = 'turn-banner' + (gameOver ? ' over' : (myTurn ? ' mine' : ''));
+    if (banner.className !== bannerCls) banner.className = bannerCls;
+    setText($('turn-banner-txt'), gameOver ? t('game.gameOver') : (myTurn ? t('game.yourTurn') : t('game.oppTurn')));
+    const bIcon = banner.querySelector('i');
+    const bIconCls = gameOver ? 'fas fa-flag' : (myTurn ? 'fas fa-play' : 'fas fa-hourglass-half');
+    if (bIcon.className !== bIconCls) bIcon.className = bIconCls;
 
-    /* Hint */
+    /* Suggerimento */
     let hint;
     if (gameOver) hint = t('game.gameOver');
     else if (!myTurn) hint = t('game.hintNotYourTurn');
     else if (selectedCard === null) hint = actionPoints > 0 ? t('game.hintPickCard') : t('game.hintNoAp');
     else if (selectedCell === null) hint = t('game.hintPickPiece');
     else hint = t('game.hintPickTarget');
-    $('hand-hint').textContent = hint;
+    setText($('hand-hint'), hint);
 
     $('end-turn-btn').disabled = !myTurn;
 }
 
+/* ---------- Cronologia ---------- */
 function renderLog() {
     const box = $('log');
-    box.innerHTML = logs.map(l =>
-        '<div class="entry ' + (l.kind ? 'evt-' + l.kind : '') + '"><i class="fas fa-circle"></i><span>' + escapeHtml(l.text) + '</span></div>'
-    ).join('');
-    box.scrollTop = box.scrollHeight;
+
+    if (!logs.length) {
+        if (box.childElementCount) box.innerHTML = '';
+        lastLogId = -1;
+        return;
+    }
+    /* partita nuova (id ripartiti da capo): ricostruisco */
+    if (logs[logs.length - 1].id < lastLogId) {
+        box.innerHTML = '';
+        lastLogId = -1;
+    }
+
+    let added = false;
+    logs.forEach(l => {
+        if (l.id <= lastLogId) return;
+        const entry = document.createElement('div');
+        entry.className = 'entry' + (l.kind ? ' evt-' + l.kind : '');
+        entry.innerHTML = '<i class="fas fa-circle"></i><span>' + escapeHtml(l.text) + '</span>';
+        box.appendChild(entry);
+        lastLogId = l.id;
+        added = true;
+    });
+
+    while (box.childElementCount > 80) box.removeChild(box.firstChild);
+    if (added) box.scrollTop = box.scrollHeight;
 }
 
 function log(text, kind) {
-    logs.push({ text, kind: kind || '' });
+    logs.push({ id: ++logSeq, text, kind: kind || '' });
     if (logs.length > 80) logs.shift();
     if ($('screen-game').classList.contains('active')) renderLog();
 }
@@ -1057,6 +1255,7 @@ function log(text, kind) {
 function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
+
 
 /* ============================== MODALI ============================== */
 function openModal(id) { $(id).classList.add('open'); }
