@@ -1,560 +1,224 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcane Chess</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #2c3e50; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .board { 
-            display: grid; 
-            grid-template-columns: repeat(7, 60px); 
-            grid-template-rows: repeat(7, 60px); 
-            border: 4px solid #34495e; 
-            margin: 0 auto; 
-            width: max-content;
-        }
-        .cell { 
-            width: 60px; height: 60px; 
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 40px; cursor: pointer; user-select: none;
-        }
-        .cell.light { background-color: #ecf0f1; color: #000; }
-        .cell.dark { background-color: #95a5a6; color: #000; }
-        .cell.selected { background-color: #f1c40f !important; }
-        .cell.highlight { background-color: #2ecc71 !important; }
-        .cell.enemy-highlight { background-color: #e74c3c !important; }
-        .piece-white { color: #fff; text-shadow: 0 0 3px #000; }
-        .piece-black { color: #000; text-shadow: 0 0 3px #fff; }
-        
-        .card-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 150px; }
-        .game-card { 
-            width: 120px; border-radius: 8px; background: #fff; color: #333; 
-            padding: 10px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .game-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .game-card.selected-card { border: 3px solid #e67e22; background-color: #fdf3e7; }
-        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
-        .card-desc { font-size: 11px; }
-        .type-action { border-top: 5px solid #3498db; }
-        .type-spell { border-top: 5px solid #9b59b6; }
-        
-        #log { height: 200px; overflow-y: auto; background: #34495e; padding: 10px; border-radius: 5px; font-size: 14px; }
-        .bot-panel { opacity: 0.8; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f16">
+<meta name="description" content="Arcane Chess 7x7 - scacchi tattici guidati da un mazzo di carte. Gioca contro il bot o sfida un amico con un codice partita.">
+<title>Arcane Chess 7x7</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="mask-icon" href="favicon.svg" color="#4c9aff">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="style.css" rel="stylesheet">
 </head>
 <body>
+<div class="bg-fx" aria-hidden="true"></div>
 
-<div class="container py-4">
-    <h1 class="text-center mb-4">Scacchi & Magia (7x7)</h1>
-    
-    <div class="row">
-        <!-- Panel Bot -->
-        <div class="col-md-3 bot-panel">
-            <h3 class="text-danger">Bot (Nero)</h3>
-            <p>Carte in mano: <span id="bot-hand-count">3</span></p>
-            <p>Mazzo: <span id="bot-deck-count">15</span></p>
-            <div id="bot-status" class="alert alert-dark mt-3">In attesa...</div>
-        </div>
+<!-- ============================ HOME ============================ -->
+<section id="screen-home" class="screen active">
+  <div class="home-wrap">
+    <header class="brand">
+      <div class="brand-mark"><img src="favicon.svg" alt="" width="76" height="76"></div>
+      <h1 class="brand-name">ARCANE CHESS</h1>
+      <p class="brand-sub" data-i18n="tagline"></p>
+    </header>
 
-        <!-- Board -->
-        <div class="col-md-6 text-center">
-            <div class="d-flex justify-content-between mb-2">
-                <span class="badge bg-danger">Bot</span>
-                <span id="turn-indicator" class="badge bg-warning text-dark fs-6">Turno: GIOCATORE</span>
-                <span class="badge bg-primary">Tu</span>
-            </div>
-            
-            <div id="board" class="board mb-3"></div>
-            
-            <button id="end-turn-btn" class="btn btn-warning w-100 fw-bold">TERMINA TURNO</button>
-        </div>
+    <div class="panel home-panel">
+      <label class="field-label" for="nickname" data-i18n="home.nickLabel"></label>
+      <div class="field">
+        <i class="fas fa-user"></i>
+        <input id="nickname" type="text" maxlength="14" autocomplete="off" spellcheck="false" data-i18n-ph="home.nickPh">
+      </div>
 
-        <!-- Player Panel -->
-        <div class="col-md-3">
-            <h3 class="text-primary">Tu (Bianco)</h3>
-            <p>Mazzo: <span id="player-deck-count">15</span> | Scarti: <span id="player-discard-count">0</span></p>
-            <div id="log" class="mb-3"></div>
+      <div class="menu">
+        <button id="btn-play-bot" class="btn btn-primary btn-menu">
+          <i class="fas fa-robot"></i>
+          <span class="btn-txt"><b data-i18n="home.playBot"></b><small data-i18n="home.playBotSub"></small></span>
+          <i class="fas fa-chevron-right arrow"></i>
+        </button>
+        <button id="btn-create" class="btn btn-menu">
+          <i class="fas fa-tower-broadcast"></i>
+          <span class="btn-txt"><b data-i18n="home.create"></b><small data-i18n="home.createSub"></small></span>
+          <i class="fas fa-chevron-right arrow"></i>
+        </button>
+        <button id="btn-join" class="btn btn-menu">
+          <i class="fas fa-key"></i>
+          <span class="btn-txt"><b data-i18n="home.join"></b><small data-i18n="home.joinSub"></small></span>
+          <i class="fas fa-chevron-right arrow"></i>
+        </button>
+      </div>
+
+      <div class="home-foot">
+        <button id="btn-rules" class="link-btn"><i class="fas fa-book-open"></i> <span data-i18n="home.rules"></span></button>
+        <div class="lang-selector">
+          <button data-lang="it" class="lang-btn active">IT</button>
+          <button data-lang="en" class="lang-btn">EN</button>
         </div>
+      </div>
     </div>
+    <p class="net-note" id="net-note"></p>
+  </div>
+</section>
 
-    <!-- Player's hand -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <h4 class="text-center">Your Hand</h4>
-            <div id="player-hand" class="card-container p-3 bg-secondary rounded"></div>
-        </div>
+<!-- ============================ LOBBY (host) ============================ -->
+<section id="screen-lobby" class="screen">
+  <div class="home-wrap narrow">
+    <div class="panel">
+      <h2 class="panel-title"><i class="fas fa-tower-broadcast"></i> <span data-i18n="lobby.title"></span></h2>
+      <p class="panel-sub" data-i18n="lobby.sub"></p>
+
+      <div class="code-box">
+        <span id="game-code" class="code-value">-----</span>
+        <button id="btn-copy" class="btn btn-icon" data-i18n-title="lobby.copy"><i class="fas fa-copy"></i></button>
+      </div>
+
+      <div class="status-line"><span class="spinner" id="lobby-spinner"></span><span id="lobby-status"></span></div>
+      <button id="btn-lobby-back" class="btn ghost btn-block"><i class="fas fa-arrow-left"></i> <span data-i18n="common.back"></span></button>
     </div>
+  </div>
+</section>
+
+<!-- ============================ JOIN ============================ -->
+<section id="screen-join" class="screen">
+  <div class="home-wrap narrow">
+    <div class="panel">
+      <h2 class="panel-title"><i class="fas fa-key"></i> <span data-i18n="join.title"></span></h2>
+      <p class="panel-sub" data-i18n="join.sub"></p>
+
+      <div class="field code-field">
+        <input id="join-code" type="text" maxlength="7" autocomplete="off" spellcheck="false" placeholder="ABC12">
+      </div>
+
+      <button id="btn-do-join" class="btn btn-primary btn-block"><i class="fas fa-right-to-bracket"></i> <span data-i18n="join.action"></span></button>
+      <div class="status-line"><span id="join-status"></span></div>
+      <button id="btn-join-back" class="btn ghost btn-block"><i class="fas fa-arrow-left"></i> <span data-i18n="common.back"></span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ GAME ============================ -->
+<section id="screen-game" class="screen">
+  <div class="game-shell">
+
+    <main class="board-column">
+      <!-- Opponent -->
+      <div class="player-bar" id="bar-opp">
+        <div class="avatar" id="opp-avatar"><i class="fas fa-robot"></i></div>
+        <div class="pb-main">
+          <div class="pb-name-row">
+            <span class="pb-name" id="opp-name">Bot</span>
+            <span class="side-chip black" id="opp-side"></span>
+          </div>
+          <div class="pb-meta">
+            <span class="pill" data-i18n-title="game.deck"><i class="fas fa-layer-group"></i><b id="opp-deck">0</b></span>
+            <span class="pill" data-i18n-title="game.hand"><i class="fas fa-hand-sparkles"></i><b id="opp-hand">0</b></span>
+            <span class="pb-status" id="opp-status"></span>
+          </div>
+        </div>
+        <div class="thinking-dots" id="opp-thinking"><span></span><span></span><span></span></div>
+      </div>
+
+      <!-- Board -->
+      <div class="board-frame">
+        <div id="board" class="board"></div>
+      </div>
+
+      <!-- Me -->
+      <div class="player-bar me" id="bar-me">
+        <div class="avatar me" id="me-avatar"><i class="fas fa-user"></i></div>
+        <div class="pb-main">
+          <div class="pb-name-row">
+            <span class="pb-name" id="me-name">Tu</span>
+            <span class="side-chip white" id="me-side"></span>
+          </div>
+          <div class="pb-meta">
+            <span class="pill" data-i18n-title="game.deck"><i class="fas fa-layer-group"></i><b id="me-deck">0</b></span>
+            <span class="pill" data-i18n-title="game.discard"><i class="fas fa-trash-can"></i><b id="me-discard">0</b></span>
+            <span class="pb-status" id="me-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Turn strip -->
+      <div class="turn-strip">
+        <div class="ap-box" id="ap-box">
+          <i class="fas fa-bolt ap-icon"></i>
+          <div class="ap-txt">
+            <span class="ap-label" data-i18n="game.actions"></span>
+            <div class="ap-pips" id="ap-pips"></div>
+          </div>
+          <span class="ap-count"><b id="ap-now">1</b><span class="ap-sep">/</span><span id="ap-max">1</span></span>
+        </div>
+        <button id="end-turn-btn" class="btn btn-primary end-turn">
+          <i class="fas fa-flag-checkered"></i> <span data-i18n="game.endTurn"></span>
+        </button>
+      </div>
+
+      <!-- Hand -->
+      <div class="hand-zone">
+        <div class="zone-head">
+          <h4><i class="fas fa-fan"></i> <span data-i18n="game.yourHand"></span></h4>
+          <span class="hint" id="hand-hint"></span>
+        </div>
+        <div id="player-hand" class="hand"></div>
+      </div>
+    </main>
+
+    <!-- Rail -->
+    <aside class="rail">
+      <div class="rail-head">
+        <div class="brand-mini"><img src="favicon.svg" alt="" width="26" height="26"><span>Arcane Chess</span></div>
+        <div class="rail-head-btns">
+          <button id="btn-rules-2" class="btn btn-icon ghost" data-i18n-title="home.rules"><i class="fas fa-book-open"></i></button>
+          <button id="btn-exit" class="btn btn-icon ghost" data-i18n-title="game.leave"><i class="fas fa-right-from-bracket"></i></button>
+        </div>
+      </div>
+
+      <div class="turn-banner" id="turn-banner"><i class="fas fa-hourglass-half"></i> <span id="turn-banner-txt"></span></div>
+
+      <div class="rail-section log-container">
+        <h6><i class="fas fa-scroll"></i> <span data-i18n="game.log"></span></h6>
+        <div id="log"></div>
+      </div>
+
+      <div class="room-tag" id="room-tag" hidden><i class="fas fa-hashtag"></i> <span id="room-code"></span></div>
+    </aside>
+
+  </div>
+</section>
+
+<!-- ============================ MODALS ============================ -->
+<div class="modal-back" id="modal-result">
+  <div class="modal result-modal">
+    <div class="result-icon" id="result-icon"><i class="fas fa-crown"></i></div>
+    <h2 id="result-title"></h2>
+    <p id="result-sub"></p>
+    <div class="modal-actions">
+      <button id="btn-rematch" class="btn btn-primary btn-block"><i class="fas fa-rotate-right"></i> <span data-i18n="result.rematch"></span></button>
+      <button id="btn-to-home" class="btn ghost btn-block"><i class="fas fa-house"></i> <span data-i18n="result.home"></span></button>
+    </div>
+  </div>
 </div>
 
-<script>
-// --- CONFIGURAZIONE E STRUTTURE DATI ---
-const BOARD_SIZE = 7;
-const PIECES = {
-    P: { white: '♙', black: '♟', type: 'pawn' },
-    R: { white: '♖', black: '♜', type: 'rook' },
-    N: { white: '♘', black: '♞', type: 'knight' },
-    B: { white: '♗', black: '♝', type: 'bishop' },
-    Q: { white: '♕', black: '♛', type: 'queen' },
-    K: { white: '♔', black: '♚', type: 'king' }
-};
+<div class="modal-back" id="modal-rules">
+  <div class="modal rules-modal">
+    <div class="modal-head">
+      <h2><i class="fas fa-book-open"></i> <span data-i18n="rules.title"></span></h2>
+      <button id="btn-rules-close" class="btn btn-icon ghost"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="rules-body"></div>
+  </div>
+</div>
 
-const CARDS_DB = [
-    { id: 'mov', name: "Movimento", desc: "Muovi una pedina normalmente.", type: 'action', copies: 3 },
-    { id: 'atk', name: "Attacco", desc: "Mangia una pedina nemica.", type: 'action', copies: 3 },
-    { id: 'mov_atk', name: "Mov. e Attacco", desc: "Muovi e/o Attacca.", type: 'action', copies: 3 },
-    { id: 'sp_tower', name: "Evoca Torre", desc: "Se il pedone è fermo da 3 turni, diventa Torre.", type: 'spell', copies: 1 },
-    { id: 'sp_queen', name: "Evoca Regina", desc: "Se il pedone ha mangiato 3 nemici, diventa Regina.", type: 'spell', copies: 1 },
-    { id: 'sp_extra', name: "Mov. Extra", desc: "Esegui un movimento extra (immediato).", type: 'spell', copies: 2 },
-    { id: 'sp_draw', name: "Pesca Carta", desc: "Pesca 1 carta dal mazzo.", type: 'spell', copies: 2 },
-    { id: 'sp_bishop', name: "Evoca Alfiere", desc: "Muovi in diagonale e trasformalo in Alfiere.", type: 'spell', copies: 1 },
-    { id: 'sp_knight', name: "Evoca Cavallo", desc: "Muovi a L e trasformalo in Cavallo.", type: 'spell', copies: 1 },
-    { id: 'sp_trap', name: "Trappola", desc: "Se il pedone muore, peschi 1 carta in più.", type: 'spell', copies: 1 }
-];
+<div id="toast-host" class="toast-host"></div>
 
-// --- STATO DEL GIOCO ---
-let board = [];
-let players = {
-    white: { deck: [], hand: [], discard: [], color: 'white', isBot: false },
-    black: { deck: [], hand: [], discard: [], color: 'black', isBot: true }
-};
-let turn = 'white';
-let selectedCard = null;
-let selectedCell = null;
-let actionPoints = 1;
-
-// Genera un mazzo iniziale
-function generateDeck() {
-    let deck = [];
-    CARDS_DB.forEach(c => {
-        for(let i=0; i<c.copies; i++) {
-            deck.push({...c, uid: Math.random().toString(36).substr(2, 9)});
-        }
-    });
-    return deck.sort(() => Math.random() - 0.5);
-}
-
-// Inizializza la partita
-function initGame() {
-    board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
-    
-    // Setup Pedine Nero (Bot) - Riga 0 e 1
-    board[0][3] = { type: 'K', color: 'black', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[1][2] = { type: 'P', color: 'black', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[1][3] = { type: 'P', color: 'black', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[1][4] = { type: 'P', color: 'black', kills: 0, turnsUnmoved: 0, hasTrap: false };
-
-    // Setup Pedine Bianco (Giocatore) - Riga 5 e 6
-    board[6][3] = { type: 'K', color: 'white', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[5][2] = { type: 'P', color: 'white', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[5][3] = { type: 'P', color: 'white', kills: 0, turnsUnmoved: 0, hasTrap: false };
-    board[5][4] = { type: 'P', color: 'white', kills: 0, turnsUnmoved: 0, hasTrap: false };
-
-    players.white.deck = generateDeck();
-    players.black.deck = generateDeck();
-    
-    drawCards('white', 3);
-    drawCards('black', 3);
-    
-    renderBoard();
-    renderHand();
-    updateUI();
-    log("Partita iniziata! Il tuo turno.");
-}
-
-// Gestione mazzo e pesca
-function drawCards(color, amount) {
-    for(let i=0; i<amount; i++) {
-        if(players[color].deck.length === 0) {
-            // Rimescola
-            if(players[color].discard.length === 0) break;
-            players[color].deck = players[color].discard.sort(() => Math.random() - 0.5);
-            players[color].discard = [];
-            if(color === 'white') log("Mazzo rimescolato.");
-        }
-        if(players[color].deck.length > 0) {
-            players[color].hand.push(players[color].deck.pop());
-        }
-    }
-}
-
-// --- RENDERIZZAZIONE ---
-function renderBoard() {
-    const boardDiv = document.getElementById('board');
-    boardDiv.innerHTML = '';
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            let cell = document.createElement('div');
-            cell.className = `cell ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
-            cell.dataset.r = r;
-            cell.dataset.c = c;
-            
-            if (board[r][c]) {
-                let piece = board[r][c];
-                cell.innerHTML = PIECES[piece.type][piece.color];
-                cell.classList.add(`piece-${piece.color}`);
-                if(piece.hasTrap) cell.style.textDecoration = "underline"; // Segnale visivo trappola
-            }
-            
-            cell.addEventListener('click', () => handleCellClick(r, c));
-            boardDiv.appendChild(cell);
-        }
-    }
-}
-
-function renderHand() {
-    const handDiv = document.getElementById('player-hand');
-    handDiv.innerHTML = '';
-    players.white.hand.forEach((card, index) => {
-        let cardEl = document.createElement('div');
-        cardEl.className = `game-card type-${card.type}`;
-        if(selectedCard === index) cardEl.classList.add('selected-card');
-        
-        cardEl.innerHTML = `
-            <div class="card-title">${card.name}</div>
-            <div class="card-desc">${card.desc}</div>
-        `;
-        cardEl.onclick = () => {
-            if(turn !== 'white') return;
-            selectedCard = selectedCard === index ? null : index;
-            selectedCell = null;
-            renderHand();
-            renderBoard(); // Rimuovi highlight
-        };
-        handDiv.appendChild(cardEl);
-    });
-}
-
-function updateUI() {
-    document.getElementById('player-deck-count').innerText = players.white.deck.length;
-    document.getElementById('player-discard-count').innerText = players.white.discard.length;
-    document.getElementById('bot-deck-count').innerText = players.black.deck.length;
-    document.getElementById('bot-hand-count').innerText = players.black.hand.length;
-    document.getElementById('turn-indicator').innerText = turn === 'white' ? 'Turno: TUO' : 'Turno: BOT';
-    document.getElementById('turn-indicator').className = turn === 'white' ? 'badge bg-warning text-dark fs-6' : 'badge bg-danger fs-6';
-}
-
-function log(msg) {
-    const l = document.getElementById('log');
-    l.innerHTML += `<div>> ${msg}</div>`;
-    l.scrollTop = l.scrollHeight;
-}
-
-// --- LOGICA DI GIOCO E REGOLE ---
-
-function handleCellClick(r, c) {
-    if (turn !== 'white') return;
-
-    // Se stiamo giocando una magia istantanea
-    if (selectedCard !== null) {
-        let card = players.white.hand[selectedCard];
-        if(card.id === 'sp_draw' || card.id === 'sp_extra') {
-            playInstantSpell(card, 'white');
-            return;
-        }
-    }
-
-    // Seleziona pedina
-    if (board[r][c] && board[r][c].color === 'white') {
-        selectedCell = {r, c};
-        renderBoard();
-        highlightValidMoves(r, c);
-        // Highlight cella selezionata
-        document.querySelector(`.cell[data-r='${r}'][data-c='${c}']`).classList.add('selected');
-        return;
-    }
-
-    // Esegui mossa
-    if (selectedCell && selectedCard !== null) {
-        let card = players.white.hand[selectedCard];
-        let sr = selectedCell.r, sc = selectedCell.c;
-        let piece = board[sr][sc];
-        let target = board[r][c];
-
-        if (isValidMove(piece, sr, sc, r, c, card.id, target)) {
-            executeMove(sr, sc, r, c, card, 'white');
-        } else {
-            log("Mossa non valida con questa carta o per questa pedina.");
-        }
-    } else if (selectedCell && selectedCard === null) {
-        log("Seleziona prima una carta dalla tua mano per agire!");
-    }
-}
-
-function highlightValidMoves(r, c) {
-    if(selectedCard === null) return;
-    let card = players.white.hand[selectedCard];
-    let piece = board[r][c];
-    
-    for(let i=0; i<BOARD_SIZE; i++) {
-        for(let j=0; j<BOARD_SIZE; j++) {
-            let target = board[i][j];
-            if(isValidMove(piece, r, c, i, j, card.id, target)) {
-                let cell = document.querySelector(`.cell[data-r='${i}'][data-c='${j}']`);
-                if(target && target.color !== piece.color) {
-                    cell.classList.add('enemy-highlight');
-                } else {
-                    cell.classList.add('highlight');
-                }
-            }
-        }
-    }
-}
-
-// Motore delle regole (estremamente semplificato per 7x7 e tipologia di gioco)
-function isValidMove(piece, sr, sc, dr, dc, cardId, target) {
-    if (sr === dr && sc === dc) return false;
-    if (target && target.color === piece.color) return false;
-
-    const drDiff = dr - sr;
-    const dcDiff = Math.abs(dc - sc);
-    const isWhite = piece.color === 'white';
-    const fwd = isWhite ? -1 : 1;
-
-    // Gestione Spells Trasformative
-    if (cardId === 'sp_tower') return piece.type === 'P' && piece.turnsUnmoved >= 3 && target === null && drDiff===0 && dcDiff===0; // Si trasforma sul posto
-    if (cardId === 'sp_queen') return piece.type === 'P' && piece.kills >= 3 && target === null && drDiff===0 && dcDiff===0;
-    if (cardId === 'sp_trap') return target === null && drDiff===0 && dcDiff===0 && !piece.hasTrap;
-    
-    // Spell Trasformative con Movimento Speciale annesso
-    if (cardId === 'sp_bishop') return piece.type === 'P' && target === null && Math.abs(drDiff) === 1 && dcDiff === 1;
-    if (cardId === 'sp_knight') return piece.type === 'P' && target === null && ((Math.abs(drDiff)===2 && dcDiff===1) || (Math.abs(drDiff)===1 && dcDiff===2));
-
-    // Regole carte azione normali
-    let isAttack = target !== null;
-    let allowMove = ['mov', 'mov_atk'].includes(cardId);
-    let allowAttack = ['atk', 'mov_atk'].includes(cardId);
-
-    if (isAttack && !allowAttack) return false;
-    if (!isAttack && !allowMove) return false;
-
-    // Movimenti standard per tipo di pedina
-    switch (piece.type) {
-        case 'P':
-            if (!isAttack) return dcDiff === 0 && drDiff === fwd;
-            if (isAttack) return dcDiff === 1 && drDiff === fwd;
-            break;
-        case 'R':
-            if (drDiff !== 0 && dcDiff !== 0) return false;
-            return checkLineOfSight(sr, sc, dr, dc);
-        case 'B':
-            if (Math.abs(drDiff) !== dcDiff) return false;
-            return checkLineOfSight(sr, sc, dr, dc);
-        case 'Q':
-            if (drDiff !== 0 && dcDiff !== 0 && Math.abs(drDiff) !== dcDiff) return false;
-            return checkLineOfSight(sr, sc, dr, dc);
-        case 'N':
-            return (Math.abs(drDiff) === 2 && dcDiff === 1) || (Math.abs(drDiff) === 1 && dcDiff === 2);
-        case 'K':
-            return Math.abs(drDiff) <= 1 && dcDiff <= 1;
-    }
-    return false;
-}
-
-// Controlla collisioni
-function checkLineOfSight(sr, sc, dr, dc) {
-    let rDir = dr > sr ? 1 : (dr < sr ? -1 : 0);
-    let cDir = dc > sc ? 1 : (dc < sc ? -1 : 0);
-    let currR = sr + rDir, currC = sc + cDir;
-    while (currR !== dr || currC !== dc) {
-        if (board[currR][currC] !== null) return false;
-        currR += rDir; currC += cDir;
-    }
-    return true;
-}
-
-function executeMove(sr, sc, dr, dc, card, color) {
-    let piece = board[sr][sc];
-    let target = board[dr][dc];
-    let isKing = piece.type === 'K';
-    let pawnsAlive = getPiecesCount(color) - 1; // -1 per il re
-
-    // Gestione morte bersaglio (e regola trappola)
-    if (target) {
-        piece.kills += 1;
-        log(`${piece.type} ${color} mangia ${target.type}!`);
-        if (target.hasTrap) {
-            log(`Scatta la trappola! ${target.color} pesca 1 carta.`);
-            drawCards(target.color, 1);
-        }
-        if (target.type === 'K') {
-            log(`<b>IL RE ${target.color.toUpperCase()} E' MORTO! VITTORIA PER ${color.toUpperCase()}!</b>`);
-            alert(color === 'white' ? "HAI VINTO!" : "HA VINTO IL BOT!");
-            window.location.reload();
-            return;
-        }
-
-        // Abilità passiva del Re: se non ha pedoni, converte il nemico ucciso
-        if(isKing && pawnsAlive <= 0 && target.type === 'P') {
-            log(`Il Re resuscita il pedone caduto nel suo esercito!`);
-            board[dr][dc] = { type: 'P', color: color, kills: 0, turnsUnmoved: 0, hasTrap: false };
-            piece.turnsUnmoved = 0;
-            board[sr][sc] = null;
-            finalizeAction(card, color);
-            return;
-        }
-    }
-
-    // Gestione trasformazioni Spells
-    if (card.id === 'sp_tower') piece.type = 'R';
-    else if (card.id === 'sp_queen') piece.type = 'Q';
-    else if (card.id === 'sp_bishop') piece.type = 'B';
-    else if (card.id === 'sp_knight') piece.type = 'N';
-    else if (card.id === 'sp_trap') { piece.hasTrap = true; log(`Trappola piazzata su ${sr},${sc}`); dr=sr; dc=sc;}
-
-    // Spostamento effettivo se diverso da partenza
-    if(sr !== dr || sc !== dc) {
-        board[dr][dc] = piece;
-        board[sr][sc] = null;
-        piece.turnsUnmoved = 0;
-    }
-
-    finalizeAction(card, color);
-}
-
-function playInstantSpell(card, color) {
-    if (card.id === 'sp_draw') {
-        log(`${color} pesca una carta extra.`);
-        drawCards(color, 1);
-    } else if (card.id === 'sp_extra') {
-        log(`${color} ottiene un'azione extra!`);
-        actionPoints += 1;
-    }
-    finalizeAction(card, color);
-}
-
-function finalizeAction(card, color) {
-    // Scarta la carta giocata
-    let p = players[color];
-    let cardIdx = p.hand.findIndex(c => c.uid === card.uid);
-    if(cardIdx > -1) {
-        p.discard.push(p.hand.splice(cardIdx, 1)[0]);
-    }
-    
-    selectedCard = null;
-    selectedCell = null;
-    actionPoints -= 1;
-    
-    renderBoard();
-    renderHand();
-    updateUI();
-
-    if (actionPoints <= 0 && color === 'white') {
-        endTurn();
-    }
-}
-
-function getPiecesCount(color) {
-    let count = 0;
-    board.forEach(row => row.forEach(cell => { if(cell && cell.color === color) count++; }));
-    return count;
-}
-
-// --- GESTIONE TURNI E BOT ---
-function endTurn() {
-    let currColor = turn;
-    
-    // Aggiorna turni inattivi
-    board.forEach(row => row.forEach(cell => {
-        if(cell && cell.color === currColor) cell.turnsUnmoved += 1;
-    }));
-
-    // Scarta carte in eccesso
-    while(players[currColor].hand.length > 3) {
-        let discarded = players[currColor].hand.pop();
-        players[currColor].discard.push(discarded);
-        if(currColor === 'white') log(`Scartata in eccesso: ${discarded.name}`);
-    }
-
-    // Cambio turno
-    turn = turn === 'white' ? 'black' : 'white';
-    actionPoints = 1;
-    drawCards(turn, 1); // Pesca 1 all'inizio del turno
-    
-    updateUI();
-    renderBoard();
-    renderHand();
-
-    if (turn === 'black') {
-        log("Turno del Bot...");
-        setTimeout(playBotTurn, 1000);
-    } else {
-        log("Tuo turno! (Azione = 1)");
-    }
-}
-
-document.getElementById('end-turn-btn').addEventListener('click', () => {
-    if(turn === 'white') endTurn();
-});
-
-// Intelligenza Bot (Semplificata, casuale e valida)
-function playBotTurn() {
-    document.getElementById('bot-status').innerText = "Sto pensando...";
-    
-    if (players.black.hand.length === 0) {
-        endTurn();
-        document.getElementById('bot-status').innerText = "In attesa...";
-        return;
-    }
-
-    let played = false;
-    let hand = players.black.hand.sort(() => Math.random() - 0.5); // Mescola per casualità
-
-    for (let card of hand) {
-        if (played) break;
-        
-        // Istantanee
-        if (card.id === 'sp_draw' || card.id === 'sp_extra') {
-            playInstantSpell(card, 'black');
-            played = true;
-            break;
-        }
-
-        // Cerca mosse valide
-        let validMoves = [];
-        for (let r=0; r<BOARD_SIZE; r++) {
-            for (let c=0; c<BOARD_SIZE; c++) {
-                if (board[r][c] && board[r][c].color === 'black') {
-                    for (let tr=0; tr<BOARD_SIZE; tr++) {
-                        for (let tc=0; tc<BOARD_SIZE; tc++) {
-                            if (isValidMove(board[r][c], r, c, tr, tc, card.id, board[tr][tc])) {
-                                validMoves.push({sr:r, sc:c, dr:tr, dc:tc, card: card});
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (validMoves.length > 0) {
-            // Prediligi attacchi se possibile
-            let attacks = validMoves.filter(m => board[m.dr][m.dc] !== null && board[m.dr][m.dc].color === 'white');
-            let chosenMove = attacks.length > 0 ? attacks[Math.floor(Math.random()*attacks.length)] : validMoves[Math.floor(Math.random()*validMoves.length)];
-            
-            executeMove(chosenMove.sr, chosenMove.sc, chosenMove.dr, chosenMove.dc, chosenMove.card, 'black');
-            played = true;
-            break;
-        }
-    }
-
-    if (!played) {
-        log("Il Bot non ha mosse valide e passa.");
-    }
-
-    setTimeout(() => {
-        document.getElementById('bot-status').innerText = "In attesa...";
-        if(actionPoints > 0 && turn === 'black') {
-            playBotTurn(); // Se ha azioni extra
-        } else if (turn === 'black') {
-            endTurn();
-        }
-    }, 1000);
-}
-
-// Avvia gioco all'apertura
-initGame();
-</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
