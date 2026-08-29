@@ -55,7 +55,10 @@
       </div>
 
       <div class="home-foot">
-        <button id="btn-rules" class="link-btn"><i class="fas fa-book-open"></i> <span data-i18n="home.rules"></span></button>
+        <div class="foot-links">
+          <button id="btn-rules" class="link-btn"><i class="fas fa-book-open"></i> <span data-i18n="home.rules"></span></button>
+          <button id="btn-net" class="link-btn"><i class="fas fa-wifi"></i> <span data-i18n="net.settings"></span></button>
+        </div>
         <div class="lang-selector">
           <button data-lang="it" class="lang-btn active">IT</button>
           <button data-lang="en" class="lang-btn">EN</button>
@@ -78,7 +81,10 @@
         <button id="btn-copy" class="btn btn-icon" data-i18n-title="lobby.copy"><i class="fas fa-copy"></i></button>
       </div>
 
+      <button id="btn-invite" class="btn btn-block"><i class="fas fa-link"></i> <span data-i18n="lobby.link"></span></button>
+
       <div class="status-line"><span class="spinner" id="lobby-spinner"></span><span id="lobby-status"></span></div>
+      <button id="btn-lobby-net" class="link-btn center-link"><i class="fas fa-wifi"></i> <span data-i18n="net.settings"></span></button>
       <button id="btn-lobby-back" class="btn ghost btn-block"><i class="fas fa-arrow-left"></i> <span data-i18n="common.back"></span></button>
     </div>
   </div>
@@ -97,6 +103,7 @@
 
       <button id="btn-do-join" class="btn btn-primary btn-block"><i class="fas fa-right-to-bracket"></i> <span data-i18n="join.action"></span></button>
       <div class="status-line"><span id="join-status"></span></div>
+      <button id="btn-join-net" class="btn btn-block" hidden><i class="fas fa-wifi"></i> <span data-i18n="net.settings"></span></button>
       <button id="btn-join-back" class="btn ghost btn-block"><i class="fas fa-arrow-left"></i> <span data-i18n="common.back"></span></button>
     </div>
   </div>
@@ -217,6 +224,33 @@
 </div>
 
 <div id="toast-host" class="toast-host"></div>
+
+<!-- ============================ MODAL RETE ============================ -->
+<div class="modal-back" id="modal-net">
+  <div class="modal net-modal">
+    <div class="modal-head">
+      <h2><i class="fas fa-wifi"></i> <span data-i18n="netcfg.title"></span></h2>
+      <button id="btn-net-close" class="btn btn-icon ghost"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="panel-sub" data-i18n="netcfg.sub"></p>
+
+      <label class="field-label" for="turn-input" data-i18n="netcfg.turnLabel"></label>
+      <textarea id="turn-input" class="net-input" rows="4" spellcheck="false" autocomplete="off" data-i18n-ph="netcfg.ph"></textarea>
+      <p class="net-hint" data-i18n="netcfg.turnHint"></p>
+
+      <div class="net-actions">
+        <button id="btn-turn-save" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> <span data-i18n="netcfg.save"></span></button>
+        <button id="btn-turn-clear" class="btn ghost"><i class="fas fa-trash-can"></i> <span data-i18n="netcfg.clear"></span></button>
+      </div>
+
+      <button id="btn-net-test" class="btn btn-block"><i class="fas fa-stethoscope"></i> <span data-i18n="netcfg.test"></span></button>
+      <ul class="net-report" id="net-report" hidden></ul>
+
+      <p class="net-hint net-help" data-i18n="netcfg.help"></p>
+    </div>
+  </div>
+</div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="script.js"></script>

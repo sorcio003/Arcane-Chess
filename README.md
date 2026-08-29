@@ -64,11 +64,55 @@ of his own color.
 * **Against the Bot** — local match, no connection required. The bot plays its own deck,
   exploits free cards and prioritizes captures.
 * **Online with a friend** — no login: just a **nickname**.
-  * Whoever creates the game gets a **unique code** to share (e.g. `8VUC8`).
-  * The friend joins from the *"Join with a code"* screen.
+  * Whoever creates the game gets a **unique code** to share (e.g. `8VUC8`), or a
+    **ready-made invite link** that opens the game with the code already filled in.
+  * The friend joins from the *"Join with a code"* screen, or by opening the link.
   * The connection is **direct browser-to-browser** (WebRTC via PeerJS), with no game server.
     The host acts as referee: it validates every move from the opponent and syncs the state.
   * The host plays White; the joiner plays Black with the board flipped to their side.
+
+## 📡 Playing across different networks
+
+A direct browser-to-browser connection has to punch through both players' routers. Two servers
+are involved, and they do different jobs:
+
+| | What it does | When it is enough |
+| --- | --- | --- |
+| **STUN** | Tells a browser its own public address. | Same Wi-Fi, or two "friendly" home routers. |
+| **TURN** | Relays the traffic when a direct path cannot be opened. | Everything else: mobile/CGNAT, corporate firewalls, symmetric NAT. |
+
+The game ships with a list of public STUN servers, so **same-network games work out of the
+box**. Across different networks a **TURN server is usually required** — and there is no
+reliable free public one, so you have to point the game at your own.
+
+Open **Rete / Network** (home screen footer) and paste your TURN server:
+
+```
+turn:turn.example.com:3478|username|password
+```
+
+One server per line. You can also paste the JSON block that providers hand you
+(`[{"urls": "...", "username": "...", "credential": "..."}]`) — it is accepted as is. The
+settings live in your browser's `localStorage`; nothing is sent anywhere.
+
+Where to get one:
+
+* **[metered.ca](https://www.metered.ca/tools/openrelay/)** — free plan, enough for a
+  turn-based game (it only carries a few KB per move).
+* **[coturn](https://github.com/coturn/coturn)** — self-hosted, if you have a VPS.
+* Cloudflare Calls, Twilio, ExpressTurn and similar also work.
+
+**Only one of the two players needs it.** Whoever configures it should share the game with
+*"Copy the invite link"*: the link carries the TURN configuration along, so the other player
+has nothing to set up.
+
+**Test button** — *Rete → Test the connection* checks what actually works on your network and
+says so in plain language: STUN reachable, TURN reachable, and whether you can currently play
+across different networks or only on the same Wi-Fi.
+
+> Note: PeerJS ships default TURN servers (`eu-0/us-0.turn.peerjs.com`) that no longer resolve.
+> That is why cross-network games used to fail silently while same-Wi-Fi games worked. The game
+> now sets its own ICE configuration instead of relying on that default.
 
 ## 🚀 Getting started
 
@@ -78,7 +122,9 @@ The game is entirely client-side.
 2. Open `index.html` in a modern browser (Chrome, Firefox, Safari, Edge).
 
 Online mode needs an internet connection (for the WebRTC signaling broker); playing against the
-Bot works offline too. If you prefer serving the files over HTTP:
+Bot works offline too. To play with someone on a different network, see
+[Playing across different networks](#-playing-across-different-networks). If you prefer serving
+the files over HTTP:
 
 ```bash
 python -m http.server 8777
@@ -101,7 +147,7 @@ captured — nothing flickers or restarts on every action.
 ```
 index.html    screens: home, lobby, join, match, modals
 style.css     theme, board, cards, responsive layout
-script.js     i18n, rules, engine, bot, P2P networking, rendering
+script.js     i18n, rules, engine, bot, P2P networking (STUN/TURN), rendering
 favicon.svg   icon (King + card + blood drop)
 ```
 

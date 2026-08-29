@@ -954,3 +954,61 @@ body {
     .btn:hover, .game-card:hover { transform: none; }
     .cell:hover .piece { transform: none; }
 }
+
+/* ============================== RETE (TURN / diagnostica) ============================== */
+.foot-links { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.center-link { display: flex; margin: 2px auto 0; }
+
+.net-modal { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; padding: 20px; }
+.net-modal .panel-sub { margin-bottom: 16px; }
+.net-modal .field-label { display: block; }
+
+.net-input {
+    width: 100%;
+    background: #070b12;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--txt);
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: .78rem;
+    line-height: 1.6;
+    padding: 11px 12px;
+    resize: vertical;
+}
+.net-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(76, 154, 255, .16); }
+.net-input::placeholder { color: #4d5c70; }
+
+.net-hint { color: var(--muted); font-size: .74rem; line-height: 1.55; margin: 8px 0 0; }
+.net-help { border-top: 1px solid var(--line-soft); padding-top: 12px; margin-top: 18px; }
+
+.net-actions { display: flex; gap: 8px; margin-top: 14px; }
+.net-actions .btn { flex: 1; }
+
+.net-report {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    background: #070b12;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: .8rem;
+    line-height: 1.6;
+    color: var(--txt-2);
+}
+.net-report li { display: flex; align-items: flex-start; gap: 9px; }
+.net-report li + li { margin-top: 6px; }
+.net-report li i { margin-top: 3px; flex-shrink: 0; }
+.net-report .ok i { color: var(--green); }
+.net-report .ko i { color: var(--danger); }
+.net-report .warn i { color: var(--gold); }
+.net-report .verdict {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--txt); font-weight: 600;
+}
+
+@media (max-width: 520px) {
+    .net-actions { flex-direction: column; }
+    .foot-links { gap: 12px; }
+}

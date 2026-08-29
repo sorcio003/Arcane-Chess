@@ -25,6 +25,8 @@ const i18n = {
             title: "Partita creata",
             sub: "Condividi questo codice con il tuo amico. La partita parte appena si collega.",
             copy: "Copia il codice",
+            link: "Copia il link d'invito",
+            linkCopied: "Link d'invito copiato!",
             waiting: "In attesa dell'avversario...",
             connecting: "Creazione stanza in corso...",
             joined: "Avversario collegato!"
@@ -43,7 +45,33 @@ const i18n = {
             note: "Il gioco funziona anche offline contro il Bot. La modalita' online usa una connessione diretta tra i due browser.",
             error: "Errore di rete. Torno alla home.",
             oppLeft: "L'avversario ha lasciato la partita.",
-            youLeft: "Hai lasciato la partita."
+            youLeft: "Hai lasciato la partita.",
+            blocked: "La tua rete blocca la connessione diretta. Per giocare tra reti diverse serve un server TURN: aprilo da \"Rete\" e incolla le credenziali.",
+            settings: "Rete"
+        },
+        netcfg: {
+            title: "Impostazioni di rete",
+            sub: "Sulla stessa rete Wi-Fi i due browser si vedono da soli. Tra reti diverse (casa / mobile / ufficio) serve quasi sempre un server TURN che faccia da ponte.",
+            turnLabel: "Server TURN",
+            turnHint: "Una riga per server: url|utente|password. Puoi anche incollare direttamente il JSON che ti da' il provider.",
+            ph: "turn:turn.esempio.com:3478|utente|password",
+            save: "Salva",
+            clear: "Rimuovi",
+            saved: "Configurazione di rete salvata.",
+            cleared: "Configurazione di rete rimossa.",
+            invalid: "Formato non valido. Usa url|utente|password oppure il JSON del provider.",
+            test: "Prova la connessione",
+            testing: "Test in corso...",
+            stunOk: "STUN raggiungibile (connessione diretta possibile)",
+            stunKo: "STUN non raggiungibile",
+            turnOk: "TURN raggiungibile (ponte attivo)",
+            turnKo: "TURN configurato ma non raggiungibile: controlla url e credenziali",
+            turnNone: "Nessun server TURN configurato",
+            verdictGood: "Tutto ok: puoi giocare anche tra reti diverse.",
+            verdictSame: "Funziona solo sulla stessa rete Wi-Fi. Aggiungi un server TURN per giocare ovunque.",
+            verdictBad: "Nessuna connessione di rete rilevata.",
+            help: "Come ottenere un TURN gratis: crea un account su metered.ca (piano free) oppure usa un tuo server coturn. Basta che uno dei due lo abbia: chi crea la partita puo' usare il link d'invito, che porta il TURN con se'.",
+            imported: "Server TURN dell'invito importato."
         },
         game: {
             you: "Tu", bot: "Bot", opponent: "Avversario",
@@ -140,6 +168,8 @@ const i18n = {
             title: "Game created",
             sub: "Share this code with your friend. The match starts as soon as they join.",
             copy: "Copy the code",
+            link: "Copy the invite link",
+            linkCopied: "Invite link copied!",
             waiting: "Waiting for opponent...",
             connecting: "Creating room...",
             joined: "Opponent connected!"
@@ -158,7 +188,33 @@ const i18n = {
             note: "The game works offline against the Bot. Online mode uses a direct browser-to-browser connection.",
             error: "Network error. Returning home.",
             oppLeft: "Your opponent left the game.",
-            youLeft: "You left the game."
+            youLeft: "You left the game.",
+            blocked: "Your network blocks the direct connection. Playing across different networks needs a TURN server: open \"Network\" and paste your credentials.",
+            settings: "Network"
+        },
+        netcfg: {
+            title: "Network settings",
+            sub: "On the same Wi-Fi the two browsers find each other on their own. Across different networks (home / mobile / office) you almost always need a TURN server to bridge them.",
+            turnLabel: "TURN server",
+            turnHint: "One server per line: url|username|password. You can also paste the JSON your provider gives you.",
+            ph: "turn:turn.example.com:3478|username|password",
+            save: "Save",
+            clear: "Remove",
+            saved: "Network settings saved.",
+            cleared: "Network settings removed.",
+            invalid: "Invalid format. Use url|username|password or your provider's JSON.",
+            test: "Test the connection",
+            testing: "Testing...",
+            stunOk: "STUN reachable (direct connection possible)",
+            stunKo: "STUN unreachable",
+            turnOk: "TURN reachable (relay active)",
+            turnKo: "TURN configured but unreachable: check url and credentials",
+            turnNone: "No TURN server configured",
+            verdictGood: "All good: you can play across different networks.",
+            verdictSame: "Same Wi-Fi only. Add a TURN server to play from anywhere.",
+            verdictBad: "No network connectivity detected.",
+            help: "Free TURN credentials: sign up at metered.ca (free plan) or run your own coturn. Only one of the two needs it: whoever creates the game can share the invite link, which carries the TURN along.",
+            imported: "TURN server imported from the invite."
         },
         game: {
             you: "You", bot: "Bot", opponent: "Opponent",
@@ -1294,6 +1350,212 @@ function buildRulesModal() {
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const PEER_PREFIX = 'arcanechess7x7-';
 
+/* ---------------------------------------------------------------------------
+   ICE: STUN + TURN
+   PeerJS di default usa uno STUN di Google e due TURN (eu-0/us-0.turn.peerjs.com)
+   che non esistono piu'. Senza un relay funzionante la connessione riesce solo
+   quando i due browser sono sulla stessa LAN: da reti diverse i candidati
+   "srflx" non bastano (NAT simmetrico, CGNAT mobile, firewall aziendali).
+   Qui la lista e' esplicita e il TURN e' configurabile dall'utente.
+--------------------------------------------------------------------------- */
+const STUN_SERVERS = [
+    { urls: [
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+        'stun:stun3.l.google.com:19302',
+        'stun:stun4.l.google.com:19302'
+    ] },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:global.stun.twilio.com:3478' }
+];
+
+const TURN_KEY = 'ac_turn';
+
+/* Accetta due formati: una riga per server ("url|utente|password") oppure il
+   JSON dei provider (array di iceServers o { iceServers: [...] }).
+   Torna [] se il testo e' vuoto, null se non e' interpretabile. */
+function parseTurnInput(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return [];
+
+    if (raw[0] === '[' || raw[0] === '{') {
+        let data;
+        try { data = JSON.parse(raw); } catch (e) { return null; }
+        const list = Array.isArray(data) ? data : (data && data.iceServers);
+        if (!Array.isArray(list)) return null;
+        const out = [];
+        list.forEach(srv => {
+            if (!srv || !srv.urls) return;
+            const entry = { urls: srv.urls };
+            if (srv.username) entry.username = String(srv.username);
+            if (srv.credential) entry.credential = String(srv.credential);
+            out.push(entry);
+        });
+        return out.length ? out : null;
+    }
+
+    const out = [];
+    const lines = raw.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parts = line.split('|').map(p => p.trim());
+        if (!/^(stun|stuns|turn|turns):\S+/i.test(parts[0])) return null;
+        const entry = { urls: parts[0] };
+        if (parts[1]) entry.username = parts[1];
+        if (parts[2]) entry.credential = parts[2];
+        out.push(entry);
+    }
+    return out.length ? out : null;
+}
+
+/* Un TURN dichiarato solo in UDP viene provato anche in TCP: parecchie reti
+   mobili e aziendali lasciano passare solo il TCP. */
+function expandTurn(list) {
+    const out = [];
+    list.forEach(srv => {
+        out.push(srv);
+        const urls = Array.isArray(srv.urls) ? srv.urls : [srv.urls];
+        urls.forEach(u => {
+            if (/^turn:/i.test(u) && u.indexOf('transport=') === -1) {
+                out.push(Object.assign({}, srv, { urls: u + '?transport=tcp' }));
+            }
+        });
+    });
+    return out;
+}
+
+function loadTurnServers() {
+    let raw;
+    try { raw = localStorage.getItem(TURN_KEY); } catch (e) { return []; }
+    if (!raw) return [];
+    try {
+        const list = JSON.parse(raw);
+        return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+}
+
+function saveTurnServers(list) {
+    try {
+        if (list && list.length) localStorage.setItem(TURN_KEY, JSON.stringify(list));
+        else localStorage.removeItem(TURN_KEY);
+    } catch (e) { /* ignore */ }
+}
+
+function hasTurn() { return loadTurnServers().length > 0; }
+
+/* Testo mostrato nel pannello: una riga per server. */
+function turnServersText() {
+    return loadTurnServers().map(srv => {
+        const url = Array.isArray(srv.urls) ? srv.urls[0] : srv.urls;
+        return [url, srv.username || '', srv.credential || ''].join('|').replace(/\|+$/, '');
+    }).join('\n');
+}
+
+function iceConfig() {
+    return {
+        iceServers: STUN_SERVERS.concat(expandTurn(loadTurnServers())),
+        iceCandidatePoolSize: 4,
+        sdpSemantics: 'unified-plan'
+    };
+}
+
+/* Opzioni comuni a host e guest: senza "config" PeerJS userebbe i suoi TURN morti. */
+function peerOptions() {
+    return { debug: 0, config: iceConfig() };
+}
+
+/* Raccoglie i candidati ICE per capire cosa funziona davvero su questa rete. */
+function probeIce(servers, policy, ms) {
+    return new Promise(resolve => {
+        let pc;
+        try {
+            pc = new RTCPeerConnection({ iceServers: servers, iceTransportPolicy: policy });
+        } catch (e) { resolve([]); return; }
+
+        const types = {};
+        pc.onicecandidate = e => {
+            if (!e.candidate || !e.candidate.candidate) return;
+            const m = /typ (\w+)/.exec(e.candidate.candidate);
+            if (m) types[m[1]] = true;
+        };
+        try { pc.createDataChannel('probe'); } catch (e) { /* ignore */ }
+        pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => { /* ignore */ });
+
+        setTimeout(() => {
+            try { pc.close(); } catch (e) { /* ignore */ }
+            resolve(Object.keys(types));
+        }, ms);
+    });
+}
+
+/* PeerJS non espone il fallimento della negoziazione ICE: lo guardo sulla
+   RTCPeerConnection sottostante, con un tentativo di restart prima di mollare. */
+function watchIce(c, onFail) {
+    let tries = 0;
+    const attach = () => {
+        if (!c || c !== conn) return;
+        const pc = c.peerConnection;
+        if (!pc) { if (tries++ < 80) setTimeout(attach, 250); return; }
+        pc.addEventListener('iceconnectionstatechange', () => {
+            if (pc.iceConnectionState !== 'failed') return;
+            if (!pc.acRestarted && typeof pc.restartIce === 'function') {
+                pc.acRestarted = true;
+                try { pc.restartIce(); } catch (e) { /* ignore */ }
+                return;
+            }
+            onFail();
+        });
+    };
+    attach();
+}
+
+/* ---- Link d'invito: codice partita (+ TURN) dentro l'hash ---- */
+function b64urlEncode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    bytes.forEach(b => { bin += String.fromCharCode(b); });
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64urlDecode(str) {
+    const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+}
+
+/* Il link porta con se' anche il TURN dell'host, cosi' l'amico non deve
+   configurare niente per giocare da un'altra rete. */
+function inviteLink(code) {
+    const base = location.href.split('#')[0];
+    let hash = '#g=' + encodeURIComponent(code);
+    const turn = loadTurnServers();
+    if (turn.length) {
+        try { hash += '&t=' + b64urlEncode(JSON.stringify(turn)); } catch (e) { /* ignore */ }
+    }
+    return base + hash;
+}
+
+function readInvite() {
+    const hash = location.hash.replace(/^#/, '');
+    if (!hash) return null;
+    const params = {};
+    hash.split('&').forEach(pair => {
+        const i = pair.indexOf('=');
+        if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
+    });
+    if (!params.g) return null;
+    const out = { code: decodeURIComponent(params.g).toUpperCase().replace(/[^A-Z0-9]/g, '') };
+    if (params.t) {
+        try {
+            const list = JSON.parse(b64urlDecode(params.t));
+            if (Array.isArray(list) && list.length) out.turn = list.filter(s => s && s.urls);
+        } catch (e) { /* ignore */ }
+    }
+    return out.code ? out : null;
+}
+
 function makeCode(len) {
     let s = '';
     for (let i = 0; i < (len || 5); i++) s += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
@@ -1324,7 +1586,7 @@ function hostGame() {
 
     let attempts = 0;
     const open = () => {
-        peer = new Peer(PEER_PREFIX + roomCode, { debug: 0 });
+        peer = new Peer(PEER_PREFIX + roomCode, peerOptions());
 
         peer.on('open', () => { $('lobby-status').textContent = t('lobby.waiting'); });
 
@@ -1358,6 +1620,7 @@ function wireHostConn(myNick) {
     conn.on('data', data => handleHostData(data, myNick));
     conn.on('close', () => onOpponentLeft());
     conn.on('error', () => onOpponentLeft());
+    watchIce(conn, () => onOpponentLeft());
 }
 
 function handleHostData(m, myNick) {
@@ -1425,22 +1688,45 @@ function syncToGuest() {
 }
 
 /* ---- GUEST ---- */
+function setJoinError(msg) {
+    $('join-status').textContent = msg;
+    $('join-status').parentElement.classList.add('error');
+    $('btn-join-net').hidden = false;
+}
+
+function clearJoinError() {
+    $('join-status').textContent = '';
+    $('join-status').parentElement.classList.remove('error');
+    $('btn-join-net').hidden = true;
+}
+
 function joinGame() {
     const nick = getNickname();
     if (!nick) { toast(t('home.needNick'), 'warn'); showScreen('screen-home'); $('nickname').focus(); return; }
-    if (!netAvailable()) { $('join-status').textContent = t('net.unavailable'); return; }
+    if (!netAvailable()) { setJoinError(t('net.unavailable')); return; }
 
     const code = $('join-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length < 4) { $('join-status').textContent = t('join.badCode'); return; }
+    if (code.length < 4) { setJoinError(t('join.badCode')); return; }
 
     destroyPeer();
     roomCode = code;
     mode = 'guest';
+    clearJoinError();
     $('join-status').textContent = t('join.connecting');
     $('btn-do-join').disabled = true;
 
-    peer = new Peer({ debug: 0 });
+    peer = new Peer(peerOptions());
     let settled = false;
+    let missing = false;          /* il broker dice che il codice non esiste */
+
+    /* Distingue il codice sbagliato dalla rete che blocca il collegamento:
+       se la stanza esiste ma il canale dati non si apre, e' un problema di NAT. */
+    const giveUp = () => {
+        if (settled || mode !== 'guest') return;
+        $('btn-do-join').disabled = false;
+        setJoinError(missing ? t('join.notFound') : t('net.blocked'));
+        destroyPeer();
+    };
 
     peer.on('open', () => {
         conn = peer.connect(PEER_PREFIX + code, { reliable: true });
@@ -1451,24 +1737,17 @@ function joinGame() {
         });
         conn.on('data', data => handleGuestData(data, nick));
         conn.on('close', () => { if (settled) onOpponentLeft(); });
-        conn.on('error', () => {
-            $('btn-do-join').disabled = false;
-            $('join-status').textContent = t('join.notFound');
-        });
+        conn.on('error', () => giveUp());
+        watchIce(conn, () => { if (settled) onOpponentLeft(); else giveUp(); });
     });
 
     peer.on('error', err => {
-        $('btn-do-join').disabled = false;
-        $('join-status').textContent =
-            (err && (err.type === 'peer-unavailable')) ? t('join.notFound') : t('join.failed');
+        if (err && err.type === 'peer-unavailable') missing = true;
+        giveUp();
     });
 
-    setTimeout(() => {
-        if (!settled && mode === 'guest' && !$('screen-game').classList.contains('active')) {
-            $('btn-do-join').disabled = false;
-            if ($('join-status').textContent === t('join.connecting')) $('join-status').textContent = t('join.notFound');
-        }
-    }, 12000);
+    /* Un TURN in TCP puo' essere lento: meglio lasciargli tempo. */
+    setTimeout(giveUp, 20000);
 }
 
 function handleGuestData(m, myNick) {
@@ -1528,6 +1807,104 @@ function leaveGame() {
     showScreen('screen-home');
 }
 
+/* ============================== PANNELLO RETE ============================== */
+function copyText(text, msg) {
+    const done = () => toast(msg);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(done);
+        return;
+    }
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+    ta.remove(); done();
+}
+
+function openNetPanel() {
+    $('turn-input').value = turnServersText();
+    $('net-report').hidden = true;
+    $('net-report').innerHTML = '';
+    openModal('modal-net');
+}
+
+function saveTurnFromInput() {
+    const list = parseTurnInput($('turn-input').value);
+    if (list === null) { toast(t('netcfg.invalid'), 'err'); return; }
+    saveTurnServers(list);
+    $('turn-input').value = turnServersText();
+    toast(list.length ? t('netcfg.saved') : t('netcfg.cleared'));
+}
+
+function clearTurnConfig() {
+    saveTurnServers([]);
+    $('turn-input').value = '';
+    $('net-report').hidden = true;
+    toast(t('netcfg.cleared'));
+}
+
+function reportRow(cls, icon, text) {
+    return '<li class="' + cls + '"><i class="fas ' + icon + '"></i><span>' + escapeHtml(text) + '</span></li>';
+}
+
+/* Diagnostica: raccoglie i candidati ICE e dice in chiaro cosa funziona
+   davvero su questa rete, invece di lasciare l'utente con un errore generico. */
+function runNetTest() {
+    const btn = $('btn-net-test');
+    const box = $('net-report');
+    btn.disabled = true;
+    box.hidden = false;
+    box.innerHTML = reportRow('warn', 'fa-hourglass-half', t('netcfg.testing'));
+
+    const turn = expandTurn(loadTurnServers());
+
+    Promise.all([
+        probeIce(STUN_SERVERS, 'all', 5000),
+        turn.length ? probeIce(turn, 'relay', 7000) : Promise.resolve([])
+    ]).then(res => {
+        const stunOk = res[0].indexOf('srflx') !== -1;
+        const turnOk = res[1].indexOf('relay') !== -1;
+
+        let html = stunOk
+            ? reportRow('ok', 'fa-circle-check', t('netcfg.stunOk'))
+            : reportRow('ko', 'fa-circle-xmark', t('netcfg.stunKo'));
+
+        if (!turn.length) html += reportRow('warn', 'fa-triangle-exclamation', t('netcfg.turnNone'));
+        else if (turnOk) html += reportRow('ok', 'fa-circle-check', t('netcfg.turnOk'));
+        else html += reportRow('ko', 'fa-circle-xmark', t('netcfg.turnKo'));
+
+        let verdict = t('netcfg.verdictBad');
+        if (turnOk) verdict = t('netcfg.verdictGood');
+        else if (stunOk) verdict = t('netcfg.verdictSame');
+
+        box.innerHTML = html + '<li class="verdict">' + escapeHtml(verdict) + '</li>';
+        btn.disabled = false;
+    });
+}
+
+/* Il link d'invito porta il codice partita e, se l'host ne ha uno, il TURN:
+   cosi' l'amico non deve configurare nulla per giocare da un'altra rete. */
+function applyInvite() {
+    const invite = readInvite();
+    if (!invite) return;
+
+    try { history.replaceState(null, '', location.href.split('#')[0]); } catch (e) { /* ignore */ }
+
+    if (invite.turn && !hasTurn()) {
+        saveTurnServers(invite.turn);
+        toast(t('netcfg.imported'));
+    }
+
+    $('join-code').value = invite.code;
+    if (getNickname()) {
+        clearJoinError();
+        $('btn-do-join').disabled = false;
+        showScreen('screen-join');
+    } else {
+        toast(t('home.needNick'), 'warn');
+        setTimeout(() => $('nickname').focus(), 120);
+    }
+}
+
 /* ============================== EVENTI UI ============================== */
 function bindEvents() {
     document.querySelectorAll('.lang-btn').forEach(b => {
@@ -1550,7 +1927,8 @@ function bindEvents() {
     $('btn-join').addEventListener('click', () => {
         const nick = getNickname();
         if (!nick) { toast(t('home.needNick'), 'warn'); $('nickname').focus(); return; }
-        $('join-status').textContent = netAvailable() ? '' : t('net.unavailable');
+        clearJoinError();
+        if (!netAvailable()) setJoinError(t('net.unavailable'));
         $('btn-do-join').disabled = false;
         showScreen('screen-join');
         setTimeout(() => $('join-code').focus(), 120);
@@ -1566,17 +1944,20 @@ function bindEvents() {
     $('btn-lobby-back').addEventListener('click', () => { destroyPeer(); roomCode = null; showScreen('screen-home'); });
 
     $('btn-copy').addEventListener('click', () => {
-        const code = $('game-code').textContent;
-        const done = () => toast(t('common.copied'));
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(done).catch(done);
-        } else {
-            const ta = document.createElement('textarea');
-            ta.value = code; document.body.appendChild(ta); ta.select();
-            try { document.execCommand('copy'); } catch (e) { /* ignore */ }
-            ta.remove(); done();
-        }
+        copyText($('game-code').textContent, t('common.copied'));
     });
+    $('btn-invite').addEventListener('click', () => {
+        copyText(inviteLink($('game-code').textContent), t('lobby.linkCopied'));
+    });
+
+    /* Impostazioni di rete: raggiungibili da home, lobby e schermata di ingresso. */
+    [$('btn-net'), $('btn-lobby-net'), $('btn-join-net')].forEach(b => {
+        b.addEventListener('click', openNetPanel);
+    });
+    $('btn-net-close').addEventListener('click', () => closeModal('modal-net'));
+    $('btn-turn-save').addEventListener('click', saveTurnFromInput);
+    $('btn-turn-clear').addEventListener('click', clearTurnConfig);
+    $('btn-net-test').addEventListener('click', runNetTest);
 
     $('end-turn-btn').addEventListener('click', requestEndTurn);
     $('btn-exit').addEventListener('click', leaveGame);
@@ -1600,6 +1981,7 @@ function bindEvents() {
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeModal('modal-rules');
+            closeModal('modal-net');
             if (isMyTurn() && (selectedCard !== null || selectedCell !== null)) {
                 selectedCard = null; selectedCell = null; renderAll();
             }
@@ -1607,6 +1989,9 @@ function bindEvents() {
     });
 
     window.addEventListener('beforeunload', () => { if (mode !== 'bot') send({ t: 'bye' }); });
+
+    /* Link d'invito aperto a pagina gia' caricata: cambia solo l'hash, niente reload. */
+    window.addEventListener('hashchange', () => { if (mode === 'bot') applyInvite(); });
 }
 
 /* ============================== AVVIO ============================== */
@@ -1615,6 +2000,7 @@ function boot() {
     $('nickname').value = localStorage.getItem('ac_nick') || '';
     setLanguage(lang);
     showScreen('screen-home');
+    applyInvite();
 }
 
 boot();
