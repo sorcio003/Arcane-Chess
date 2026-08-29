@@ -1,0 +1,12 @@
+name = "arcane-chess-relay"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# Le classi SQLite sono quelle disponibili anche sul piano gratuito.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

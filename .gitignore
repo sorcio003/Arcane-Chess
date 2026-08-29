@@ -1,0 +1,4 @@
+# wrangler (deploy del relay)
+server/.wrangler/
+server/node_modules/
+node_modules/

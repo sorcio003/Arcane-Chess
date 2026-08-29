@@ -4,8 +4,21 @@
     {
       "name": "arcane-chess",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8777"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8777"
+      ],
       "port": 8777
+    },
+    {
+      "name": "arcane-chess-relay",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server/relay.js",
+        "8790"
+      ],
+      "port": 8790
     }
   ]
 }

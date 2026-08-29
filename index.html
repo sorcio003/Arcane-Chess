@@ -162,6 +162,10 @@
           </div>
           <span class="ap-count"><b id="ap-now">1</b><span class="ap-sep">/</span><span id="ap-max">1</span></span>
         </div>
+        <div class="turn-chip">
+          <i class="fas fa-clock-rotate-left"></i>
+          <span class="tc-txt"><span class="tc-label" data-i18n="game.turnNo"></span><b id="turn-no">1</b></span>
+        </div>
         <button id="end-turn-btn" class="btn btn-primary end-turn">
           <i class="fas fa-flag-checkered"></i> <span data-i18n="game.endTurn"></span>
         </button>
@@ -235,13 +239,13 @@
     <div class="modal-body">
       <p class="panel-sub" data-i18n="netcfg.sub"></p>
 
-      <label class="field-label" for="turn-input" data-i18n="netcfg.turnLabel"></label>
-      <textarea id="turn-input" class="net-input" rows="4" spellcheck="false" autocomplete="off" data-i18n-ph="netcfg.ph"></textarea>
-      <p class="net-hint" data-i18n="netcfg.turnHint"></p>
+      <label class="field-label" for="relay-input" data-i18n="netcfg.relayLabel"></label>
+      <input id="relay-input" class="net-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" data-i18n-ph="netcfg.ph">
+      <p class="net-hint" data-i18n="netcfg.relayHint"></p>
 
       <div class="net-actions">
-        <button id="btn-turn-save" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> <span data-i18n="netcfg.save"></span></button>
-        <button id="btn-turn-clear" class="btn ghost"><i class="fas fa-trash-can"></i> <span data-i18n="netcfg.clear"></span></button>
+        <button id="btn-relay-save" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> <span data-i18n="netcfg.save"></span></button>
+        <button id="btn-relay-clear" class="btn ghost"><i class="fas fa-trash-can"></i> <span data-i18n="netcfg.clear"></span></button>
       </div>
 
       <button id="btn-net-test" class="btn btn-block"><i class="fas fa-stethoscope"></i> <span data-i18n="netcfg.test"></span></button>
@@ -252,7 +256,6 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -38,45 +38,46 @@ const i18n = {
             connecting: "Connessione in corso...",
             badCode: "Inserisci un codice valido.",
             notFound: "Nessuna partita trovata con questo codice.",
+            busy: "Questa partita e' gia' al completo.",
             failed: "Connessione fallita. Riprova."
         },
         net: {
-            unavailable: "Modalita' online non disponibile: libreria di rete non caricata (serve una connessione a Internet). Puoi comunque giocare contro il Bot.",
-            note: "Il gioco funziona anche offline contro il Bot. La modalita' online usa una connessione diretta tra i due browser.",
+            unavailable: "Modalita' online non disponibile: questo browser non supporta i WebSocket. Puoi comunque giocare contro il Bot.",
+            note: "Il gioco funziona anche offline contro il Bot. Le partite online passano da un relay: si gioca da qualsiasi rete.",
             error: "Errore di rete. Torno alla home.",
             oppLeft: "L'avversario ha lasciato la partita.",
             youLeft: "Hai lasciato la partita.",
-            blocked: "La tua rete blocca la connessione diretta. Per giocare tra reti diverse serve un server TURN: aprilo da \"Rete\" e incolla le credenziali.",
+            norelay: "Nessun relay configurato: apri \"Rete\" e incolla l'indirizzo del tuo server.",
+            unreachable: "Relay non raggiungibile. Controlla l'indirizzo in \"Rete\" e che il server sia acceso.",
             settings: "Rete"
         },
         netcfg: {
             title: "Impostazioni di rete",
-            sub: "Sulla stessa rete Wi-Fi i due browser si vedono da soli. Tra reti diverse (casa / mobile / ufficio) serve quasi sempre un server TURN che faccia da ponte.",
-            turnLabel: "Server TURN",
-            turnHint: "Una riga per server: url|utente|password. Puoi anche incollare direttamente il JSON che ti da' il provider.",
-            ph: "turn:turn.esempio.com:3478|utente|password",
+            sub: "Le partite online passano da un piccolo relay: entrambi i browser si collegano a lui e lui inoltra le mosse. Cosi' si gioca da qualsiasi rete, senza aprire porte e senza NAT di mezzo.",
+            relayLabel: "Indirizzo del relay",
+            relayHint: "Esempio: wss://arcane-chess-relay.tuonome.workers.dev - oppure ws://192.168.1.10:8790 se lo fai girare in locale.",
+            ph: "wss://il-tuo-relay.workers.dev",
             save: "Salva",
             clear: "Rimuovi",
-            saved: "Configurazione di rete salvata.",
-            cleared: "Configurazione di rete rimossa.",
-            invalid: "Formato non valido. Usa url|utente|password oppure il JSON del provider.",
+            saved: "Relay salvato.",
+            cleared: "Relay rimosso.",
+            invalid: "Indirizzo non valido.",
             test: "Prova la connessione",
             testing: "Test in corso...",
-            stunOk: "STUN raggiungibile (connessione diretta possibile)",
-            stunKo: "STUN non raggiungibile",
-            turnOk: "TURN raggiungibile (ponte attivo)",
-            turnKo: "TURN configurato ma non raggiungibile: controlla url e credenziali",
-            turnNone: "Nessun server TURN configurato",
-            verdictGood: "Tutto ok: puoi giocare anche tra reti diverse.",
-            verdictSame: "Funziona solo sulla stessa rete Wi-Fi. Aggiungi un server TURN per giocare ovunque.",
-            verdictBad: "Nessuna connessione di rete rilevata.",
-            help: "Come ottenere un TURN gratis: crea un account su metered.ca (piano free) oppure usa un tuo server coturn. Basta che uno dei due lo abbia: chi crea la partita puo' usare il link d'invito, che porta il TURN con se'.",
-            imported: "Server TURN dell'invito importato."
+            relayOk: "Relay raggiungibile",
+            relayKo: "Relay non raggiungibile",
+            relayNone: "Nessun relay configurato",
+            verdictGood: "Tutto ok: puoi giocare con chiunque, su qualsiasi rete.",
+            verdictBad: "Il relay non risponde: controlla l'indirizzo, o che il server sia avviato.",
+            verdictNone: "Configura un relay per giocare online.",
+            help: "Il codice del server sta in server/. Deploy su Cloudflare Workers con \"npx wrangler deploy\" (piano gratuito), oppure \"node server/relay.js\" su una macchina raggiungibile. Chi crea la partita puo' condividere il link d'invito, che porta l'indirizzo con se'.",
+            imported: "Relay dell'invito importato."
         },
         game: {
             you: "Tu", bot: "Bot", opponent: "Avversario",
             white: "Bianco", black: "Nero",
             deck: "Mazzo", hand: "Mano", discard: "Scarti",
+            turnNo: "Turno",
             actions: "Azioni disponibili",
             endTurn: "Termina turno",
             yourHand: "La tua mano",
@@ -106,6 +107,8 @@ const i18n = {
             trapSet: "Trappola piazzata su {p}.",
             resurrect: "Il Re resuscita un soldato caduto!",
             capture: "{a} cattura {b}!",
+            sniped: "{a} colpisce {b} a distanza!",
+            lastStand: "Ultima difesa di {p}: al Re restano solo carte da combattimento!",
             promoted: "Pedone promosso a Regina!",
             transformed: "{a} si trasforma in {b}!",
             drew: "Pesca extra: +1 carta (azione gratuita).",
@@ -131,12 +134,17 @@ const i18n = {
             t2: "Una pedina gia' trasformata puo' evolvere ancora, ma solo verso un grado piu' alto.",
             t3: "Il Re e' l'unica pedina che non puo' mai trasformarsi.",
             t4: "Un pedone che raggiunge l'ultima traversa diventa Regina, come negli scacchi veri.",
-            cardsTitle: "Le carte"
+            cardsTitle: "Le carte",
+            loneTitle: "Quando resti col solo Re",
+            l1: "Le magie di trasformazione spariscono: il Re non si trasforma, sarebbero carta straccia.",
+            l2: "Peschi soltanto Movimento, Attacco e Mossa & Attacco.",
+            l3: "Si sblocca l'Attacco a Lungo Raggio, che esiste solo in questa situazione."
         },
         cards: {
             mov: { n: "Movimento", d: "Muovi una pedina secondo il suo schema." },
             atk: { n: "Attacco", d: "Cattura una pedina nemica." },
             mov_atk: { n: "Mossa & Attacco", d: "Muovi oppure cattura." },
+            atk_far: { n: "Attacco a Lungo Raggio", d: "Colpisci un nemico entro 2 caselle restando fermo." },
             omni: { n: "Muovi, Trasforma e Mangia", d: "Muovi o cattura, poi la pedina sale di grado." },
             sp_tower: { n: "Evoca Torre", d: "Ferma da 3 turni? Diventa Torre." },
             sp_queen: { n: "Evoca Regina", d: "Con 3 uccisioni? Diventa Regina." },
@@ -181,45 +189,46 @@ const i18n = {
             connecting: "Connecting...",
             badCode: "Enter a valid code.",
             notFound: "No game found with this code.",
+            busy: "This game is already full.",
             failed: "Connection failed. Try again."
         },
         net: {
-            unavailable: "Online mode unavailable: networking library not loaded (an internet connection is required). You can still play against the Bot.",
-            note: "The game works offline against the Bot. Online mode uses a direct browser-to-browser connection.",
+            unavailable: "Online mode unavailable: this browser has no WebSocket support. You can still play against the Bot.",
+            note: "The game works offline against the Bot. Online matches go through a relay, so any network works.",
             error: "Network error. Returning home.",
             oppLeft: "Your opponent left the game.",
             youLeft: "You left the game.",
-            blocked: "Your network blocks the direct connection. Playing across different networks needs a TURN server: open \"Network\" and paste your credentials.",
+            norelay: "No relay configured: open \"Network\" and paste your server address.",
+            unreachable: "Relay unreachable. Check the address under \"Network\" and that the server is running.",
             settings: "Network"
         },
         netcfg: {
             title: "Network settings",
-            sub: "On the same Wi-Fi the two browsers find each other on their own. Across different networks (home / mobile / office) you almost always need a TURN server to bridge them.",
-            turnLabel: "TURN server",
-            turnHint: "One server per line: url|username|password. You can also paste the JSON your provider gives you.",
-            ph: "turn:turn.example.com:3478|username|password",
+            sub: "Online matches go through a small relay: both browsers connect to it and it forwards the moves. That way any network works, with no ports to open and no NAT in the way.",
+            relayLabel: "Relay address",
+            relayHint: "For example: wss://arcane-chess-relay.yourname.workers.dev - or ws://192.168.1.10:8790 if you run it locally.",
+            ph: "wss://your-relay.workers.dev",
             save: "Save",
             clear: "Remove",
-            saved: "Network settings saved.",
-            cleared: "Network settings removed.",
-            invalid: "Invalid format. Use url|username|password or your provider's JSON.",
+            saved: "Relay saved.",
+            cleared: "Relay removed.",
+            invalid: "Invalid address.",
             test: "Test the connection",
             testing: "Testing...",
-            stunOk: "STUN reachable (direct connection possible)",
-            stunKo: "STUN unreachable",
-            turnOk: "TURN reachable (relay active)",
-            turnKo: "TURN configured but unreachable: check url and credentials",
-            turnNone: "No TURN server configured",
-            verdictGood: "All good: you can play across different networks.",
-            verdictSame: "Same Wi-Fi only. Add a TURN server to play from anywhere.",
-            verdictBad: "No network connectivity detected.",
-            help: "Free TURN credentials: sign up at metered.ca (free plan) or run your own coturn. Only one of the two needs it: whoever creates the game can share the invite link, which carries the TURN along.",
-            imported: "TURN server imported from the invite."
+            relayOk: "Relay reachable",
+            relayKo: "Relay unreachable",
+            relayNone: "No relay configured",
+            verdictGood: "All good: you can play with anyone, on any network.",
+            verdictBad: "The relay is not answering: check the address, or that the server is running.",
+            verdictNone: "Configure a relay to play online.",
+            help: "The server code lives in server/. Deploy it to Cloudflare Workers with \"npx wrangler deploy\" (free plan), or run \"node server/relay.js\" on a reachable machine. Whoever creates the game can share the invite link, which carries the address along.",
+            imported: "Relay imported from the invite."
         },
         game: {
             you: "You", bot: "Bot", opponent: "Opponent",
             white: "White", black: "Black",
             deck: "Deck", hand: "Hand", discard: "Discard",
+            turnNo: "Turn",
             actions: "Available actions",
             endTurn: "End turn",
             yourHand: "Your hand",
@@ -249,6 +258,8 @@ const i18n = {
             trapSet: "Trap placed on {p}.",
             resurrect: "The King resurrects a fallen soldier!",
             capture: "{a} captures {b}!",
+            sniped: "{a} strikes {b} from afar!",
+            lastStand: "{p} makes a last stand: the King is left with combat cards only!",
             promoted: "Pawn promoted to Queen!",
             transformed: "{a} transforms into {b}!",
             drew: "Extra draw: +1 card (free action).",
@@ -274,12 +285,17 @@ const i18n = {
             t2: "An already transformed piece can evolve again, but only to a higher rank.",
             t3: "The King is the only piece that can never transform.",
             t4: "A pawn reaching the far rank becomes a Queen, just like in real chess.",
-            cardsTitle: "The cards"
+            cardsTitle: "The cards",
+            loneTitle: "When only your King is left",
+            l1: "Transformation spells disappear: the King never transforms, they would be dead cards.",
+            l2: "You only draw Movement, Attack and Move & Attack.",
+            l3: "The Long-Range Attack unlocks - it exists only in this situation."
         },
         cards: {
             mov: { n: "Movement", d: "Move a piece along its pattern." },
             atk: { n: "Attack", d: "Capture an enemy piece." },
             mov_atk: { n: "Move & Attack", d: "Move or capture." },
+            atk_far: { n: "Long-Range Attack", d: "Hit an enemy within 2 squares without moving." },
             omni: { n: "Move, Transform & Eat", d: "Move or capture, then the piece ranks up." },
             sp_tower: { n: "Summon Rook", d: "Still for 3 turns? Becomes a Rook." },
             sp_queen: { n: "Summon Queen", d: "With 3 kills? Becomes a Queen." },
@@ -316,6 +332,14 @@ const RANK_OF = { P: 0, N: 1, R: 2, B: 3, Q: 4 };
 
 const FREE_CARDS = ['sp_draw', 'sp_extra'];          /* non consumano l'azione */
 const IN_PLACE_CARDS = ['sp_tower', 'sp_queen', 'sp_trap']; /* si lanciano su una tua pedina */
+const RANGED_CARDS = ['atk_far'];                    /* colpiscono senza spostare la pedina */
+const FAR_RANGE = 2;                                 /* gittata dell'attacco a lungo raggio */
+
+/* Col solo Re in campo le magie sono carta straccia: il Re non si trasforma mai.
+   Restano le carte da combattimento, piu' l'attacco a lungo raggio che esiste
+   soltanto in questa situazione. */
+const LONE_KING_CARDS = ['mov', 'atk', 'mov_atk', 'atk_far'];
+const LONE_KING_POOL = ['mov', 'mov', 'atk', 'atk', 'mov_atk', 'mov_atk', 'atk_far', 'atk_far'];
 
 const TRAP_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
     '<rect x="3.2" y="2.6" width="13.6" height="18.4" rx="2.4" fill="#f3f7fc" stroke="#0d1117" stroke-width="1.3"/>' +
@@ -336,6 +360,7 @@ const CARD_META = {
     mov:       { kind: 'action', art: '<i class="fas fa-arrows-up-down-left-right"></i>' },
     atk:       { kind: 'action', art: '<i class="fas fa-crosshairs"></i>' },
     mov_atk:   { kind: 'action', art: '<i class="fas fa-bolt"></i>' },
+    atk_far:   { kind: 'legend', art: '<i class="fas fa-bullseye"></i>' },
     omni:      { kind: 'legend', art: '<i class="fas fa-wand-magic-sparkles"></i>' },
     sp_tower:  { kind: 'spell',  art: '<span class="glyph">♜</span>' },
     sp_queen:  { kind: 'spell',  art: '<span class="glyph">♛</span>' },
@@ -360,6 +385,9 @@ const DECK_TEMPLATE = [
     { id: 'sp_trap', copies: 1 }
 ];
 
+/* Non fa parte del mazzo: si genera solo quando un giocatore resta col solo Re. */
+const LONE_KING_TEMPLATE = [{ id: 'atk_far' }];
+
 /* ============================== STATO ============================== */
 let mode = 'bot';            /* 'bot' | 'host' | 'guest' */
 let myColor = 'white';
@@ -371,6 +399,7 @@ let players = {
     black: { deck: [], hand: [], discard: [] }
 };
 let turn = 'white';
+let turnCount = 1;           /* turni giocati, uno per ogni cambio di mano */
 let actionPoints = 1;
 let maxActionPoints = 1;
 
@@ -386,8 +415,6 @@ let counts = { myDeck: 0, myDiscard: 0, myHand: 0, oppDeck: 0, oppHand: 0 };
 let botGuard = 0;
 
 /* Rete */
-let peer = null;
-let conn = null;
 let roomCode = null;
 
 const $ = (id) => document.getElementById(id);
@@ -407,7 +434,7 @@ function setLanguage(newLang) {
     document.documentElement.lang = lang;
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
     applyStaticI18n();
-    $('net-note').textContent = window.Peer ? t('net.note') : t('net.unavailable');
+    $('net-note').textContent = t('net.note');
     if ($('screen-game').classList.contains('active')) renderAll();
 }
 
@@ -432,11 +459,15 @@ function getNickname() {
 }
 
 /* ============================== SETUP PARTITA ============================== */
+function makeCard(id) {
+    return { id, kind: CARD_META[id].kind, uid: Math.random().toString(36).slice(2, 11) };
+}
+
 function makeDeck() {
     const deck = [];
     DECK_TEMPLATE.forEach(c => {
         for (let i = 0; i < c.copies; i++) {
-            deck.push({ id: c.id, kind: CARD_META[c.id].kind, uid: Math.random().toString(36).slice(2, 11) });
+            deck.push(makeCard(c.id));
         }
     });
     return shuffle(deck);
@@ -482,6 +513,7 @@ function startGame(newMode, myName, oppName) {
         drawCards('white', HAND_LIMIT);
         drawCards('black', HAND_LIMIT);
         turn = 'white';
+        turnCount = 1;
         actionPoints = 1;
         maxActionPoints = 1;
         logs = [];
@@ -509,6 +541,14 @@ function startGame(newMode, myName, oppName) {
 function drawCards(color, amount) {
     for (let i = 0; i < amount; i++) {
         const p = players[color];
+
+        /* Ultima difesa: al Re solo arrivano soltanto carte da combattimento,
+           generate al momento - il suo mazzo resta li' se dovesse riprendersi. */
+        if (isLoneKing(color)) {
+            p.hand.push(makeCard(LONE_KING_POOL[Math.floor(Math.random() * LONE_KING_POOL.length)]));
+            continue;
+        }
+
         if (p.deck.length === 0) {
             if (p.discard.length === 0) break;
             p.deck = shuffle(p.discard);
@@ -520,6 +560,25 @@ function drawCards(color, amount) {
 }
 
 /* ============================== REGOLE ============================== */
+/* Una sola pedina in campo puo' essere solo il Re: se cadesse, la partita
+   sarebbe gia' finita. */
+function isLoneKing(color) { return countPieces(color) === 1; }
+
+/* Chi resta col solo Re butta le magie inutili e le rimpiazza con carte da
+   combattimento. Se piu' avanti recupera un pedone (passiva del Re), lo stato
+   si annulla e torna a pescare dal suo mazzo. */
+function checkLastStand(color) {
+    const p = players[color];
+    if (!isLoneKing(color)) { p.lastStand = false; return; }
+    if (p.lastStand || gameOver) return;
+
+    p.lastStand = true;
+    const dead = p.hand.filter(c => LONE_KING_CARDS.indexOf(c.id) === -1);
+    dead.forEach(c => discardCard(c, color));
+    drawCards(color, dead.length);
+    log(fmt(t('msg.lastStand'), { p: names[color] || t('game.' + color) }), 'magic');
+}
+
 function canUpgradeTo(piece, toType) {
     if (!piece) return false;
     if (piece.type === 'K') return false;                 /* il Re non si trasforma mai */
@@ -570,6 +629,11 @@ function isValidMove(piece, sr, sc, dr, dc, cardId, target) {
             ((Math.abs(dRow) === 2 && dCol === 1) || (Math.abs(dRow) === 1 && dCol === 2));
     }
 
+    /* Attacco a lungo raggio: colpisce un nemico entro 2 caselle e resta fermo. */
+    if (cardId === 'atk_far') {
+        return !!target && Math.max(Math.abs(dRow), dCol) <= FAR_RANGE;
+    }
+
     const isAttack = !!target;
     if (cardId === 'mov' && isAttack) return false;
     if (cardId === 'atk' && !isAttack) return false;
@@ -611,12 +675,14 @@ function executeMove(sr, sc, dr, dc, card, color) {
     if (!piece) return;
     const target = board[dr][dc];
     const sameSquare = (sr === dr && sc === dc);
+    const ranged = RANGED_CARDS.indexOf(card.id) !== -1;
     let kingCaptured = false;
 
     /* --- Cattura --- */
     if (target && !sameSquare) {
         piece.kills += 1;
-        log(fmt(t('msg.capture'), { a: pieceName(piece.type), b: pieceName(target.type) }), 'kill');
+        log(fmt(t(ranged ? 'msg.sniped' : 'msg.capture'),
+            { a: pieceName(piece.type), b: pieceName(target.type) }), 'kill');
         if (target.hasTrap) {
             log(t('msg.trapSprung'), 'good');
             drawCards(target.color, 1);
@@ -627,7 +693,7 @@ function executeMove(sr, sc, dr, dc, card, color) {
         if (!kingCaptured && piece.type === 'K' && countPieces(color) === 1 && target.type === 'P') {
             log(t('msg.resurrect'), 'magic');
             board[dr][dc] = newPiece('P', color);
-            board[sr][sc] = null;
+            if (!ranged) board[sr][sc] = null;
             lastMove = { sr, sc, dr, dc };
             finalizeAction(card, color, false);
             return;
@@ -646,8 +712,11 @@ function executeMove(sr, sc, dr, dc, card, color) {
         piece.type = 'Q';
     }
 
-    /* --- Spostamento --- */
-    if (!sameSquare) {
+    /* --- Spostamento (l'attacco a lungo raggio colpisce e resta fermo) --- */
+    if (ranged) {
+        board[dr][dc] = null;
+        lastMove = { sr, sc, dr, dc };
+    } else if (!sameSquare) {
         board[dr][dc] = piece;
         board[sr][sc] = null;
         piece.turnsUnmoved = 0;
@@ -703,6 +772,8 @@ function discardCard(card, color) {
 
 function finalizeAction(card, color, free) {
     discardCard(card, color);
+    checkLastStand('white');
+    checkLastStand('black');
     selectedCard = null;
     selectedCell = null;
     if (!free) actionPoints = Math.max(0, actionPoints - 1);
@@ -720,6 +791,7 @@ function endTurn() {
     }
 
     turn = opposite(turn);
+    turnCount += 1;
     actionPoints = 1;
     maxActionPoints = 1;
     botGuard = 0;
@@ -740,7 +812,6 @@ function finishGame(winnerColor) {
 
 /* ============================== AZIONI DEL GIOCATORE ============================== */
 /* In 'guest' non muto lo stato: mando l'intenzione all'host che valida e risincronizza. */
-function send(msg) { if (conn && conn.open) conn.send(msg); }
 
 function requestMove(sr, sc, dr, dc, card) {
     if (mode === 'guest') {
@@ -1223,6 +1294,7 @@ function renderHUD() {
     setText($('opp-side'), t('game.' + opp));
     $('opp-side').className = 'side-chip ' + opp;
 
+    setText($('turn-no'), String(turnCount));
     setText($('me-deck'), String(counts.myDeck));
     setText($('me-discard'), String(counts.myDiscard));
     setText($('opp-deck'), String(counts.oppDeck));
@@ -1343,218 +1415,40 @@ function buildRulesModal() {
             '</div>';
     });
     html += '</div>';
+
+    /* Carte che esistono solo quando un giocatore resta col solo Re */
+    html += '<h3>' + r.loneTitle + '</h3><ul><li>' + [r.l1, r.l2, r.l3].join('</li><li>') + '</li></ul>';
+    html += '<div class="rule-cards">';
+    LONE_KING_TEMPLATE.forEach(entry => {
+        const meta = CARD_META[entry.id];
+        const c = cards[entry.id];
+        html += '<div class="rule-card ' + meta.kind + '">' +
+            '<span class="rc-icon">' + meta.art + '</span>' +
+            '<span><b>' + c.n + '</b><span>' + c.d + '</span></span>' +
+            '</div>';
+    });
+    html += '</div>';
+
     $('rules-body').innerHTML = html;
 }
 
-/* ============================== RETE (P2P) ============================== */
+/* ============================== RETE (relay) ============================== */
+/* I due browser non si parlano piu' direttamente: si collegano entrambi a un
+   relay WebSocket che inoltra i messaggi. Il relay non conosce le regole, non
+   tiene stato: l'arbitro resta l'host. Cosi' la partita funziona su qualsiasi
+   rete, senza STUN, TURN, NAT o porte da aprire.
+   Il server sta in server/ (Cloudflare Workers oppure Node). */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const PEER_PREFIX = 'arcanechess7x7-';
 
-/* ---------------------------------------------------------------------------
-   ICE: STUN + TURN
-   PeerJS di default usa uno STUN di Google e due TURN (eu-0/us-0.turn.peerjs.com)
-   che non esistono piu'. Senza un relay funzionante la connessione riesce solo
-   quando i due browser sono sulla stessa LAN: da reti diverse i candidati
-   "srflx" non bastano (NAT simmetrico, CGNAT mobile, firewall aziendali).
-   Qui la lista e' esplicita e il TURN e' configurabile dall'utente.
---------------------------------------------------------------------------- */
-const STUN_SERVERS = [
-    { urls: [
-        'stun:stun.l.google.com:19302',
-        'stun:stun1.l.google.com:19302',
-        'stun:stun2.l.google.com:19302',
-        'stun:stun3.l.google.com:19302',
-        'stun:stun4.l.google.com:19302'
-    ] },
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    { urls: 'stun:global.stun.twilio.com:3478' }
-];
+/* Dopo il deploy incolla qui il tuo relay (es. 'wss://arcane-chess-relay.tuonome.workers.dev').
+   In alternativa si imposta dal pannello "Rete" e resta salvato nel browser. */
+const DEFAULT_RELAY = '';
 
-const TURN_KEY = 'ac_turn';
+const RELAY_KEY = 'ac_relay';
+const KEEPALIVE_MS = 25000;
 
-/* Accetta due formati: una riga per server ("url|utente|password") oppure il
-   JSON dei provider (array di iceServers o { iceServers: [...] }).
-   Torna [] se il testo e' vuoto, null se non e' interpretabile. */
-function parseTurnInput(text) {
-    const raw = String(text || '').trim();
-    if (!raw) return [];
-
-    if (raw[0] === '[' || raw[0] === '{') {
-        let data;
-        try { data = JSON.parse(raw); } catch (e) { return null; }
-        const list = Array.isArray(data) ? data : (data && data.iceServers);
-        if (!Array.isArray(list)) return null;
-        const out = [];
-        list.forEach(srv => {
-            if (!srv || !srv.urls) return;
-            const entry = { urls: srv.urls };
-            if (srv.username) entry.username = String(srv.username);
-            if (srv.credential) entry.credential = String(srv.credential);
-            out.push(entry);
-        });
-        return out.length ? out : null;
-    }
-
-    const out = [];
-    const lines = raw.split(/\r?\n/);
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const parts = line.split('|').map(p => p.trim());
-        if (!/^(stun|stuns|turn|turns):\S+/i.test(parts[0])) return null;
-        const entry = { urls: parts[0] };
-        if (parts[1]) entry.username = parts[1];
-        if (parts[2]) entry.credential = parts[2];
-        out.push(entry);
-    }
-    return out.length ? out : null;
-}
-
-/* Un TURN dichiarato solo in UDP viene provato anche in TCP: parecchie reti
-   mobili e aziendali lasciano passare solo il TCP. */
-function expandTurn(list) {
-    const out = [];
-    list.forEach(srv => {
-        out.push(srv);
-        const urls = Array.isArray(srv.urls) ? srv.urls : [srv.urls];
-        urls.forEach(u => {
-            if (/^turn:/i.test(u) && u.indexOf('transport=') === -1) {
-                out.push(Object.assign({}, srv, { urls: u + '?transport=tcp' }));
-            }
-        });
-    });
-    return out;
-}
-
-function loadTurnServers() {
-    let raw;
-    try { raw = localStorage.getItem(TURN_KEY); } catch (e) { return []; }
-    if (!raw) return [];
-    try {
-        const list = JSON.parse(raw);
-        return Array.isArray(list) ? list : [];
-    } catch (e) { return []; }
-}
-
-function saveTurnServers(list) {
-    try {
-        if (list && list.length) localStorage.setItem(TURN_KEY, JSON.stringify(list));
-        else localStorage.removeItem(TURN_KEY);
-    } catch (e) { /* ignore */ }
-}
-
-function hasTurn() { return loadTurnServers().length > 0; }
-
-/* Testo mostrato nel pannello: una riga per server. */
-function turnServersText() {
-    return loadTurnServers().map(srv => {
-        const url = Array.isArray(srv.urls) ? srv.urls[0] : srv.urls;
-        return [url, srv.username || '', srv.credential || ''].join('|').replace(/\|+$/, '');
-    }).join('\n');
-}
-
-function iceConfig() {
-    return {
-        iceServers: STUN_SERVERS.concat(expandTurn(loadTurnServers())),
-        iceCandidatePoolSize: 4,
-        sdpSemantics: 'unified-plan'
-    };
-}
-
-/* Opzioni comuni a host e guest: senza "config" PeerJS userebbe i suoi TURN morti. */
-function peerOptions() {
-    return { debug: 0, config: iceConfig() };
-}
-
-/* Raccoglie i candidati ICE per capire cosa funziona davvero su questa rete. */
-function probeIce(servers, policy, ms) {
-    return new Promise(resolve => {
-        let pc;
-        try {
-            pc = new RTCPeerConnection({ iceServers: servers, iceTransportPolicy: policy });
-        } catch (e) { resolve([]); return; }
-
-        const types = {};
-        pc.onicecandidate = e => {
-            if (!e.candidate || !e.candidate.candidate) return;
-            const m = /typ (\w+)/.exec(e.candidate.candidate);
-            if (m) types[m[1]] = true;
-        };
-        try { pc.createDataChannel('probe'); } catch (e) { /* ignore */ }
-        pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => { /* ignore */ });
-
-        setTimeout(() => {
-            try { pc.close(); } catch (e) { /* ignore */ }
-            resolve(Object.keys(types));
-        }, ms);
-    });
-}
-
-/* PeerJS non espone il fallimento della negoziazione ICE: lo guardo sulla
-   RTCPeerConnection sottostante, con un tentativo di restart prima di mollare. */
-function watchIce(c, onFail) {
-    let tries = 0;
-    const attach = () => {
-        if (!c || c !== conn) return;
-        const pc = c.peerConnection;
-        if (!pc) { if (tries++ < 80) setTimeout(attach, 250); return; }
-        pc.addEventListener('iceconnectionstatechange', () => {
-            if (pc.iceConnectionState !== 'failed') return;
-            if (!pc.acRestarted && typeof pc.restartIce === 'function') {
-                pc.acRestarted = true;
-                try { pc.restartIce(); } catch (e) { /* ignore */ }
-                return;
-            }
-            onFail();
-        });
-    };
-    attach();
-}
-
-/* ---- Link d'invito: codice partita (+ TURN) dentro l'hash ---- */
-function b64urlEncode(str) {
-    const bytes = new TextEncoder().encode(str);
-    let bin = '';
-    bytes.forEach(b => { bin += String.fromCharCode(b); });
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function b64urlDecode(str) {
-    const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
-    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
-}
-
-/* Il link porta con se' anche il TURN dell'host, cosi' l'amico non deve
-   configurare niente per giocare da un'altra rete. */
-function inviteLink(code) {
-    const base = location.href.split('#')[0];
-    let hash = '#g=' + encodeURIComponent(code);
-    const turn = loadTurnServers();
-    if (turn.length) {
-        try { hash += '&t=' + b64urlEncode(JSON.stringify(turn)); } catch (e) { /* ignore */ }
-    }
-    return base + hash;
-}
-
-function readInvite() {
-    const hash = location.hash.replace(/^#/, '');
-    if (!hash) return null;
-    const params = {};
-    hash.split('&').forEach(pair => {
-        const i = pair.indexOf('=');
-        if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
-    });
-    if (!params.g) return null;
-    const out = { code: decodeURIComponent(params.g).toUpperCase().replace(/[^A-Z0-9]/g, '') };
-    if (params.t) {
-        try {
-            const list = JSON.parse(b64urlDecode(params.t));
-            if (Array.isArray(list) && list.length) out.turn = list.filter(s => s && s.urls);
-        } catch (e) { /* ignore */ }
-    }
-    return out.code ? out : null;
-}
+let sock = null;
+let keepAlive = 0;
 
 function makeCode(len) {
     let s = '';
@@ -1562,65 +1456,131 @@ function makeCode(len) {
     return s;
 }
 
-function netAvailable() { return typeof window.Peer === 'function'; }
+/* Accetta wss://, https://, o anche solo l'host: normalizza tutto in ws/wss. */
+function normalizeRelay(value) {
+    let v = String(value || '').trim().replace(/\/+$/, '');
+    if (!v) return '';
+    if (/^https:\/\//i.test(v)) return 'wss://' + v.slice(8);
+    if (/^http:\/\//i.test(v)) return 'ws://' + v.slice(7);
+    if (/^wss?:\/\//i.test(v)) return v;
+    return (location.protocol === 'https:' ? 'wss://' : 'ws://') + v;
+}
+
+function relayUrl() {
+    let stored = null;
+    try { stored = localStorage.getItem(RELAY_KEY); } catch (e) { /* ignore */ }
+    return normalizeRelay(stored || DEFAULT_RELAY);
+}
+
+function saveRelay(value) {
+    const url = normalizeRelay(value);
+    try {
+        if (url) localStorage.setItem(RELAY_KEY, url);
+        else localStorage.removeItem(RELAY_KEY);
+    } catch (e) { /* ignore */ }
+    return url;
+}
+
+function netAvailable() { return typeof WebSocket === 'function' && !!relayUrl(); }
 
 function destroyPeer() {
-    try { if (conn) conn.close(); } catch (e) { /* ignore */ }
-    try { if (peer) peer.destroy(); } catch (e) { /* ignore */ }
-    conn = null; peer = null;
+    if (keepAlive) { clearInterval(keepAlive); keepAlive = 0; }
+    if (sock) {
+        sock.onopen = sock.onmessage = sock.onerror = sock.onclose = null;
+        try { sock.close(); } catch (e) { /* ignore */ }
+    }
+    sock = null;
+}
+
+function send(msg) {
+    if (sock && sock.readyState === WebSocket.OPEN) {
+        try { sock.send(JSON.stringify(msg)); } catch (e) { /* ignore */ }
+    }
+}
+
+/* Apre la stanza sul relay.
+   handlers.control -> messaggi di servizio del relay ('joined', 'peer-joined',
+   'peer-left', 'no-room', 'full'); handlers.game -> messaggi dell'avversario;
+   handlers.fail -> il relay non e' raggiungibile; handlers.gone -> connessione
+   caduta dopo essere stata aperta. */
+function openRoom(code, role, handlers) {
+    const base = relayUrl();
+    if (!base) { handlers.fail(); return null; }
+
+    let ws;
+    try { ws = new WebSocket(base + '/r/' + encodeURIComponent(code) + '?role=' + role); }
+    catch (e) { handlers.fail(); return null; }
+
+    let opened = false;
+
+    ws.onopen = () => {
+        opened = true;
+        /* Tiene sveglia la connessione: i messaggi sconosciuti vengono ignorati. */
+        if (keepAlive) clearInterval(keepAlive);
+        keepAlive = setInterval(() => send({ t: 'ka' }), KEEPALIVE_MS);
+    };
+
+    ws.onmessage = ev => {
+        let m;
+        try { m = JSON.parse(ev.data); } catch (e) { return; }
+        if (!m || typeof m !== 'object') return;
+        if (m._r) handlers.control(m._r);
+        else handlers.game(m);
+    };
+
+    ws.onerror = () => { if (!opened) handlers.fail(); };
+    ws.onclose = () => { if (opened) handlers.gone(); else handlers.fail(); };
+
+    return ws;
 }
 
 /* ---- HOST ---- */
+function setLobbyError(msg) {
+    $('lobby-status').textContent = msg;
+    $('lobby-status').parentElement.classList.add('error');
+    $('lobby-spinner').style.display = 'none';
+}
+
 function hostGame() {
     const nick = getNickname();
     if (!nick) { toast(t('home.needNick'), 'warn'); $('nickname').focus(); return; }
-    if (!netAvailable()) { toast(t('net.unavailable'), 'err'); return; }
+    if (!netAvailable()) { toast(t('net.norelay'), 'err'); openNetPanel(); return; }
 
     destroyPeer();
-    roomCode = makeCode(5);
     mode = 'host';
     showScreen('screen-lobby');
-    $('game-code').textContent = roomCode;
-    $('lobby-status').textContent = t('lobby.connecting');
-    $('lobby-spinner').style.display = '';
 
     let attempts = 0;
+    let started = false;
+
     const open = () => {
-        peer = new Peer(PEER_PREFIX + roomCode, peerOptions());
+        roomCode = makeCode(5);
+        $('game-code').textContent = roomCode;
+        $('lobby-status').textContent = t('lobby.connecting');
+        $('lobby-status').parentElement.classList.remove('error');
+        $('lobby-spinner').style.display = '';
 
-        peer.on('open', () => { $('lobby-status').textContent = t('lobby.waiting'); });
-
-        peer.on('connection', c => {
-            if (conn && conn.open) { c.close(); return; }   /* stanza per due */
-            conn = c;
-            wireHostConn(nick);
-        });
-
-        peer.on('error', err => {
-            if (err && err.type === 'unavailable-id' && attempts < 4) {
-                attempts++;
-                roomCode = makeCode(5);
-                $('game-code').textContent = roomCode;
-                try { peer.destroy(); } catch (e) { /* ignore */ }
-                open();
-                return;
-            }
-            $('lobby-status').textContent = t('join.failed');
-            $('lobby-spinner').style.display = 'none';
+        sock = openRoom(roomCode, 'host', {
+            control: kind => {
+                if (kind === 'joined') { $('lobby-status').textContent = t('lobby.waiting'); return; }
+                if (kind === 'peer-joined') { $('lobby-status').textContent = t('lobby.joined'); return; }
+                if (kind === 'peer-left') {
+                    if (started) onOpponentLeft();
+                    else $('lobby-status').textContent = t('lobby.waiting');
+                    return;
+                }
+                if (kind === 'full') {
+                    /* codice gia' occupato: ne provo un altro */
+                    if (attempts++ < 4) { destroyPeer(); open(); return; }
+                    setLobbyError(t('join.failed'));
+                }
+            },
+            game: m => { started = true; handleHostData(m, nick); },
+            fail: () => setLobbyError(t('net.unreachable')),
+            gone: () => { if (started) onOpponentLeft(); else setLobbyError(t('net.unreachable')); }
         });
     };
     open();
-}
-
-function wireHostConn(myNick) {
-    conn.on('open', () => {
-        $('lobby-status').textContent = t('lobby.joined');
-        conn.send({ t: 'hello-host', name: myNick });
-    });
-    conn.on('data', data => handleHostData(data, myNick));
-    conn.on('close', () => onOpponentLeft());
-    conn.on('error', () => onOpponentLeft());
-    watchIce(conn, () => onOpponentLeft());
 }
 
 function handleHostData(m, myNick) {
@@ -1629,7 +1589,7 @@ function handleHostData(m, myNick) {
     if (m.t === 'hello') {
         /* Il guest si e' presentato: avvio la partita e sincronizzo */
         startGame('host', myNick, String(m.name || t('game.opponent')).slice(0, 14));
-        conn.send({ t: 'start', color: 'black', names, code: roomCode });
+        send({ t: 'start', color: 'black', names, code: roomCode });
         syncToGuest();
         return;
     }
@@ -1665,11 +1625,12 @@ function applyGuestAction(m) {
 }
 
 function syncToGuest() {
-    if (mode !== 'host' || !conn || !conn.open) return;
-    conn.send({
+    if (mode !== 'host') return;
+    send({
         t: 'sync',
         board,
         turn,
+        turnNo: turnCount,
         ap: actionPoints,
         maxAp: maxActionPoints,
         hand: players.black.hand,
@@ -1692,6 +1653,7 @@ function setJoinError(msg) {
     $('join-status').textContent = msg;
     $('join-status').parentElement.classList.add('error');
     $('btn-join-net').hidden = false;
+    $('btn-do-join').disabled = false;
 }
 
 function clearJoinError() {
@@ -1703,7 +1665,7 @@ function clearJoinError() {
 function joinGame() {
     const nick = getNickname();
     if (!nick) { toast(t('home.needNick'), 'warn'); showScreen('screen-home'); $('nickname').focus(); return; }
-    if (!netAvailable()) { setJoinError(t('net.unavailable')); return; }
+    if (!netAvailable()) { setJoinError(t('net.norelay')); return; }
 
     const code = $('join-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length < 4) { setJoinError(t('join.badCode')); return; }
@@ -1715,39 +1677,27 @@ function joinGame() {
     $('join-status').textContent = t('join.connecting');
     $('btn-do-join').disabled = true;
 
-    peer = new Peer(peerOptions());
-    let settled = false;
-    let missing = false;          /* il broker dice che il codice non esiste */
+    let settled = false;      /* la stanza ci ha accettati */
+    let handled = false;      /* errore gia' mostrato: la chiusura non lo sovrascrive */
 
-    /* Distingue il codice sbagliato dalla rete che blocca il collegamento:
-       se la stanza esiste ma il canale dati non si apre, e' un problema di NAT. */
-    const giveUp = () => {
-        if (settled || mode !== 'guest') return;
-        $('btn-do-join').disabled = false;
-        setJoinError(missing ? t('join.notFound') : t('net.blocked'));
+    const fail = msg => {
+        if (handled) return;
+        handled = true;
+        setJoinError(msg);
         destroyPeer();
     };
 
-    peer.on('open', () => {
-        conn = peer.connect(PEER_PREFIX + code, { reliable: true });
-
-        conn.on('open', () => {
-            settled = true;
-            conn.send({ t: 'hello', name: nick });
-        });
-        conn.on('data', data => handleGuestData(data, nick));
-        conn.on('close', () => { if (settled) onOpponentLeft(); });
-        conn.on('error', () => giveUp());
-        watchIce(conn, () => { if (settled) onOpponentLeft(); else giveUp(); });
+    sock = openRoom(code, 'guest', {
+        control: kind => {
+            if (kind === 'joined') { settled = true; send({ t: 'hello', name: nick }); return; }
+            if (kind === 'no-room') { fail(t('join.notFound')); return; }
+            if (kind === 'full') { fail(t('join.busy')); return; }
+            if (kind === 'peer-left') { onOpponentLeft(); return; }
+        },
+        game: m => handleGuestData(m, nick),
+        fail: () => fail(t('net.unreachable')),
+        gone: () => { if (settled && !handled) onOpponentLeft(); else fail(t('net.unreachable')); }
     });
-
-    peer.on('error', err => {
-        if (err && err.type === 'peer-unavailable') missing = true;
-        giveUp();
-    });
-
-    /* Un TURN in TCP puo' essere lento: meglio lasciargli tempo. */
-    setTimeout(giveUp, 20000);
 }
 
 function handleGuestData(m, myNick) {
@@ -1765,6 +1715,7 @@ function handleGuestData(m, myNick) {
 function applySnapshot(s) {
     board = s.board;
     turn = s.turn;
+    turnCount = s.turnNo || 1;
     actionPoints = s.ap;
     maxActionPoints = s.maxAp;
     players.black.hand = s.hand || [];
@@ -1821,23 +1772,23 @@ function copyText(text, msg) {
 }
 
 function openNetPanel() {
-    $('turn-input').value = turnServersText();
+    $('relay-input').value = relayUrl();
     $('net-report').hidden = true;
     $('net-report').innerHTML = '';
     openModal('modal-net');
 }
 
-function saveTurnFromInput() {
-    const list = parseTurnInput($('turn-input').value);
-    if (list === null) { toast(t('netcfg.invalid'), 'err'); return; }
-    saveTurnServers(list);
-    $('turn-input').value = turnServersText();
-    toast(list.length ? t('netcfg.saved') : t('netcfg.cleared'));
+function saveRelayFromInput() {
+    const raw = $('relay-input').value.trim();
+    const url = saveRelay(raw);
+    if (raw && !url) { toast(t('netcfg.invalid'), 'err'); return; }
+    $('relay-input').value = url;
+    toast(url ? t('netcfg.saved') : t('netcfg.cleared'));
 }
 
-function clearTurnConfig() {
-    saveTurnServers([]);
-    $('turn-input').value = '';
+function clearRelayConfig() {
+    saveRelay('');
+    $('relay-input').value = '';
     $('net-report').hidden = true;
     toast(t('netcfg.cleared'));
 }
@@ -1846,51 +1797,95 @@ function reportRow(cls, icon, text) {
     return '<li class="' + cls + '"><i class="fas ' + icon + '"></i><span>' + escapeHtml(text) + '</span></li>';
 }
 
-/* Diagnostica: raccoglie i candidati ICE e dice in chiaro cosa funziona
-   davvero su questa rete, invece di lasciare l'utente con un errore generico. */
+/* Apre una stanza usa-e-getta sul relay: se risponde "joined" e' vivo. */
+function probeRelay(url, ms) {
+    return new Promise(resolve => {
+        let ws;
+        let done = false;
+        const finish = ok => {
+            if (done) return;
+            done = true;
+            if (ws) { ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null; try { ws.close(); } catch (e) { /* ignore */ } }
+            resolve(ok);
+        };
+
+        try { ws = new WebSocket(url + '/r/TEST' + makeCode(4) + '?role=host'); }
+        catch (e) { resolve(false); return; }
+
+        ws.onmessage = ev => {
+            let m;
+            try { m = JSON.parse(ev.data); } catch (e) { return; }
+            finish(!!(m && m._r === 'joined'));
+        };
+        ws.onerror = () => finish(false);
+        ws.onclose = () => finish(false);
+        setTimeout(() => finish(false), ms);
+    });
+}
+
 function runNetTest() {
     const btn = $('btn-net-test');
     const box = $('net-report');
-    btn.disabled = true;
+    const url = relayUrl();
+
     box.hidden = false;
+
+    if (!url) {
+        box.innerHTML = reportRow('ko', 'fa-circle-xmark', t('netcfg.relayNone')) +
+            '<li class="verdict">' + escapeHtml(t('netcfg.verdictNone')) + '</li>';
+        return;
+    }
+
+    btn.disabled = true;
     box.innerHTML = reportRow('warn', 'fa-hourglass-half', t('netcfg.testing'));
 
-    const turn = expandTurn(loadTurnServers());
-
-    Promise.all([
-        probeIce(STUN_SERVERS, 'all', 5000),
-        turn.length ? probeIce(turn, 'relay', 7000) : Promise.resolve([])
-    ]).then(res => {
-        const stunOk = res[0].indexOf('srflx') !== -1;
-        const turnOk = res[1].indexOf('relay') !== -1;
-
-        let html = stunOk
-            ? reportRow('ok', 'fa-circle-check', t('netcfg.stunOk'))
-            : reportRow('ko', 'fa-circle-xmark', t('netcfg.stunKo'));
-
-        if (!turn.length) html += reportRow('warn', 'fa-triangle-exclamation', t('netcfg.turnNone'));
-        else if (turnOk) html += reportRow('ok', 'fa-circle-check', t('netcfg.turnOk'));
-        else html += reportRow('ko', 'fa-circle-xmark', t('netcfg.turnKo'));
-
-        let verdict = t('netcfg.verdictBad');
-        if (turnOk) verdict = t('netcfg.verdictGood');
-        else if (stunOk) verdict = t('netcfg.verdictSame');
-
-        box.innerHTML = html + '<li class="verdict">' + escapeHtml(verdict) + '</li>';
+    probeRelay(url, 8000).then(ok => {
+        box.innerHTML =
+            (ok ? reportRow('ok', 'fa-circle-check', t('netcfg.relayOk') + ' - ' + url)
+                : reportRow('ko', 'fa-circle-xmark', t('netcfg.relayKo') + ' - ' + url)) +
+            '<li class="verdict">' + escapeHtml(ok ? t('netcfg.verdictGood') : t('netcfg.verdictBad')) + '</li>';
         btn.disabled = false;
     });
 }
 
-/* Il link d'invito porta il codice partita e, se l'host ne ha uno, il TURN:
-   cosi' l'amico non deve configurare nulla per giocare da un'altra rete. */
+/* ---- Link d'invito: codice partita + indirizzo del relay ---- */
+function inviteLink(code) {
+    const base = location.href.split('#')[0];
+    let hash = '#g=' + encodeURIComponent(code);
+    const relay = relayUrl();
+    if (relay) hash += '&s=' + encodeURIComponent(relay);
+    return base + hash;
+}
+
+function readInvite() {
+    const hash = location.hash.replace(/^#/, '');
+    if (!hash) return null;
+
+    const params = {};
+    hash.split('&').forEach(pair => {
+        const i = pair.indexOf('=');
+        if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
+    });
+    if (!params.g) return null;
+
+    const out = { code: decodeURIComponent(params.g).toUpperCase().replace(/[^A-Z0-9]/g, '') };
+    if (params.s) {
+        const relay = normalizeRelay(decodeURIComponent(params.s));
+        if (relay) out.relay = relay;
+    }
+    return out.code ? out : null;
+}
+
+/* Il link d'invito porta anche l'indirizzo del relay, cosi' chi lo apre non
+   deve configurare nulla: gli basta il link. */
 function applyInvite() {
     const invite = readInvite();
     if (!invite) return;
 
     try { history.replaceState(null, '', location.href.split('#')[0]); } catch (e) { /* ignore */ }
 
-    if (invite.turn && !hasTurn()) {
-        saveTurnServers(invite.turn);
+    if (invite.relay && !relayUrl()) {
+        saveRelay(invite.relay);
         toast(t('netcfg.imported'));
     }
 
@@ -1955,8 +1950,8 @@ function bindEvents() {
         b.addEventListener('click', openNetPanel);
     });
     $('btn-net-close').addEventListener('click', () => closeModal('modal-net'));
-    $('btn-turn-save').addEventListener('click', saveTurnFromInput);
-    $('btn-turn-clear').addEventListener('click', clearTurnConfig);
+    $('btn-relay-save').addEventListener('click', saveRelayFromInput);
+    $('btn-relay-clear').addEventListener('click', clearRelayConfig);
     $('btn-net-test').addEventListener('click', runNetTest);
 
     $('end-turn-btn').addEventListener('click', requestEndTurn);

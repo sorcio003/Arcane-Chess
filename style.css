@@ -948,6 +948,7 @@ body {
 @media (max-width: 380px) {
     .turn-strip { flex-direction: column; align-items: stretch; }
     .end-turn { width: 100%; }
+    .turn-chip { justify-content: center; }
 }
 
 @media (hover: none) {
@@ -974,7 +975,6 @@ body {
     font-size: .78rem;
     line-height: 1.6;
     padding: 11px 12px;
-    resize: vertical;
 }
 .net-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(76, 154, 255, .16); }
 .net-input::placeholder { color: #4d5c70; }
@@ -1011,4 +1011,27 @@ body {
 @media (max-width: 520px) {
     .net-actions { flex-direction: column; }
     .foot-links { gap: 12px; }
+}
+
+/* ---------- Contatore turni ---------- */
+.turn-chip {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 9px;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px 14px;
+    box-shadow: var(--shadow-sm);
+}
+.turn-chip > i { color: var(--muted); font-size: .95rem; }
+.tc-txt { display: flex; flex-direction: column; line-height: 1.1; }
+.tc-label {
+    font-size: .62rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 5px;
+}
+.tc-txt b {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: var(--txt);
+    text-align: center;
 }
