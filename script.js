@@ -19,7 +19,16 @@ const i18n = {
             join: "Entra con un codice",
             joinSub: "Sfida un amico",
             rules: "Regole e carte",
-            needNick: "Scrivi prima un nickname!"
+            needNick: "Scrivi prima un nickname!",
+            skinLabel: "Set di pezzi",
+            skinHint: "Scegli prima di iniziare: vale per tutte le tue partite."
+        },
+        skins: {
+            "default": "Classico",
+            sealion: "Otarie",
+            tucano: "Tucani",
+            gardevoir: "Gardevoir",
+            gallade: "Gallade"
         },
         lobby: {
             title: "Partita creata",
@@ -175,7 +184,16 @@ const i18n = {
             join: "Join with a code",
             joinSub: "Challenge a friend",
             rules: "Rules & cards",
-            needNick: "Type a nickname first!"
+            needNick: "Type a nickname first!",
+            skinLabel: "Piece set",
+            skinHint: "Pick one before you start: it applies to all your games."
+        },
+        skins: {
+            "default": "Classic",
+            sealion: "Sea Lions",
+            tucano: "Toucans",
+            gardevoir: "Gardevoir",
+            gallade: "Gallade"
         },
         lobby: {
             title: "Game created",
@@ -333,8 +351,14 @@ const BOARD_SIZE = 7;
 const HAND_LIMIT = 3;
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
 
-/* Glifi "pieni" per entrambi i colori: resi bianchi/neri via CSS (come sui siti veri) */
+/* Glifi "pieni" per entrambi i colori: fanno da testo alternativo alle immagini */
 const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
+const PIECE_CODES = ['P', 'R', 'N', 'B', 'Q', 'K'];
+
+/* Set di pezzi disponibili: ognuno e' una cartella skin/<nome>/ con dodici
+   immagini (wP.png ... bK.png) piu' la striscia preview.png del selettore. */
+const SKINS = ['default', 'sealion', 'tucano', 'gardevoir', 'gallade'];
+const DEFAULT_SKIN = 'default';
 
 /* Scala di potenza per le trasformazioni: si sale solo verso l'alto. Il Re e' escluso. */
 const UPGRADE_LADDER = ['P', 'N', 'R', 'B', 'Q'];
@@ -431,6 +455,67 @@ const $ = (id) => document.getElementById(id);
 const opposite = (c) => c === 'white' ? 'black' : 'white';
 const isMyTurn = () => turn === myColor && !gameOver;
 
+/* ============================== SET DI PEZZI ==============================
+   La scelta resta sul dispositivo del giocatore: in una partita online ognuno
+   vede la scacchiera col set che preferisce, le mosse non cambiano. */
+let skin = SKINS.indexOf(stored('ac_skin')) !== -1 ? stored('ac_skin') : DEFAULT_SKIN;
+
+function pieceSrc(color, type) {
+    return 'skin/' + skin + '/' + (color === 'white' ? 'w' : 'b') + type + '.png';
+}
+
+/* Scarica in anticipo i dodici pezzi: la scacchiera si apre gia' completa. */
+function preloadSkin(id) {
+    PIECE_CODES.forEach(type => ['w', 'b'].forEach(c => {
+        const img = new Image();
+        img.src = 'skin/' + id + '/' + c + type + '.png';
+    }));
+}
+
+function setSkin(id) {
+    if (SKINS.indexOf(id) === -1) id = DEFAULT_SKIN;
+    skin = store('ac_skin', id);
+    preloadSkin(id);
+    renderSkinPicker();
+    repaintPieces();
+}
+
+/* Cambio set a partita aperta: si sostituisce solo l'immagine, lo stato resta. */
+function repaintPieces() {
+    document.querySelectorAll('#board .piece > img').forEach(img => {
+        const src = pieceSrc(img.dataset.color, img.dataset.type);
+        if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    });
+}
+
+/* Selettore in home: una scheda per set, costruita una volta sola. */
+function renderSkinPicker() {
+    const box = $('skin-picker');
+    if (!box) return;
+    if (!box.children.length) {
+        SKINS.forEach(id => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'skin-card';
+            b.dataset.skin = id;
+            b.innerHTML =
+                '<span class="skin-shot"><img src="skin/' + id + '/preview.png" alt="" loading="lazy"></span>' +
+                '<span class="skin-name"></span>' +
+                '<i class="fas fa-circle-check skin-tick"></i>';
+            b.addEventListener('click', () => setSkin(id));
+            box.appendChild(b);
+        });
+    }
+    Array.prototype.forEach.call(box.children, b => {
+        const on = b.dataset.skin === skin;
+        setClass(b, 'active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        setText(b.querySelector('.skin-name'), t('skins.' + b.dataset.skin));
+        /* la scheda scelta si porta in vista da sola: la fila scorre in orizzontale */
+        if (on) box.scrollLeft = b.offsetLeft - (box.clientWidth - b.clientWidth) / 2;
+    });
+}
+
 /* ============================== TRADUZIONE UI ============================== */
 function applyStaticI18n() {
     document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
@@ -444,6 +529,7 @@ function setLanguage(newLang) {
     document.documentElement.lang = lang;
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
     applyStaticI18n();
+    renderSkinPicker();
     $('net-note').textContent = t('net.note');
     if ($('screen-game').classList.contains('active')) renderAll();
 }
@@ -1072,7 +1158,7 @@ function syncCell(r, c) {
     }
     const cls = 'piece ' + p.color;
     if (pieceEl.className !== cls) pieceEl.className = cls;
-    setText(pieceEl, GLYPH[p.type]);
+    setPieceArt(pieceEl, p.color, p.type);
 
     if (p.hasTrap && !marker) {
         marker = document.createElement('span');
@@ -1086,6 +1172,23 @@ function syncCell(r, c) {
 
     if (!prev) return 'add';
     return prev.split('|')[1] === p.color ? 'morph' : 'add';
+}
+
+/* Immagine del pezzo nel set scelto. Il glifo resta come testo alternativo:
+   se il file non arriva, la casella si legge lo stesso. */
+function setPieceArt(el, color, type) {
+    let img = el.firstElementChild;
+    if (!img) {
+        img = document.createElement('img');
+        img.draggable = false;
+        el.appendChild(img);
+    }
+    if (img.dataset.color !== color || img.dataset.type !== type) {
+        img.dataset.color = color;
+        img.dataset.type = type;
+        img.alt = GLYPH[type];
+        img.setAttribute('src', pieceSrc(color, type));
+    }
 }
 
 function renderBoard() {
@@ -2313,6 +2416,7 @@ function bindEvents() {
 function boot() {
     bindEvents();
     $('nickname').value = localStorage.getItem('ac_nick') || '';
+    preloadSkin(skin);
     setLanguage(lang);
     showScreen('screen-home');
     applyInvite();

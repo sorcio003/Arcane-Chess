@@ -80,6 +80,38 @@ player is no longer alone and goes straight back to drawing from their normal de
 The two mechanics combine — a lone King can strike a pawn two squares away and resurrect it
 right there, on the target square, without ever leaving his own.
 
+## 🎨 Piece sets
+
+Before starting a match, the home screen lets you pick the **piece set** the board is drawn
+with. Five of them ship with the game:
+
+| Set | Pieces |
+| --- | --- |
+| **Classic** | the usual silhouettes, flat two-tone |
+| **Sea Lions** | sea lions in crowns and mitres |
+| **Toucans** | toucans, beaks over the edge of the square |
+| **Gardevoir** | Gardevoir line, white court against a dark one |
+| **Gallade** | Gallade line, blades out |
+
+The choice is saved in the browser and **stays local**: in an online match each player sees the
+board with their own set, and nothing about it travels over the wire.
+
+### Adding a set
+
+Drop a sprite sheet in `skin/` as `<name>.png` — two rows (white on top, black below) by six
+columns, in the order pawn, rook, knight, bishop, queen, king, on a transparent background.
+Then:
+
+```bash
+python tools/slice_skins.py <name>
+```
+
+The tool writes `skin/<name>/wP.png ... bK.png` plus the `preview.png` used by the picker. It
+isolates each piece by connected component, so a beak or a cloak that overlaps the neighbour
+stays with its own piece, and it scales each row so the king fills the height while the pawn
+keeps its smaller size — the board then draws every piece with one CSS rule. Last step: add
+`<name>` to `SKINS` and a label to `i18n.<lang>.skins` in `script.js`.
+
 ## 🌐 Game modes
 
 * **Against the Bot** — local match, no connection required. The bot plays its own deck,
@@ -194,8 +226,8 @@ showing the previous `script.js` for a while after you publish — which looks e
 that is not there. `index.html` therefore loads its assets with a version marker:
 
 ```html
-<link href="style.css?v=5" rel="stylesheet">
-<script src="script.js?v=5"></script>
+<link href="style.css?v=6" rel="stylesheet">
+<script src="script.js?v=6"></script>
 ```
 
 **Bump that number whenever you publish a change.** Everyone gets the new files immediately,
@@ -222,6 +254,8 @@ index.html    screens: home, lobby, join, match, modals
 style.css     theme, board, cards, responsive layout
 script.js     i18n, rules, engine, bot, networking (MQTT + relay), rendering
 favicon.svg   icon (King + card + blood drop)
+skin/         piece sets: <name>.png sprite sheet + <name>/ with the 12 sliced pieces
+tools/        slice_skins.py, the slicer that fills those folders
 server/       the relay: worker.js (Cloudflare) and relay.js (Node)
 ```
 

@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- ?v= : alza il numero a ogni pubblicazione, cosi' i browser non servono la copia vecchia -->
-<link href="style.css?v=5" rel="stylesheet">
+<link href="style.css?v=6" rel="stylesheet">
 </head>
 <body>
 <div class="bg-fx" aria-hidden="true"></div>
@@ -35,6 +35,14 @@
       <div class="field">
         <i class="fas fa-user"></i>
         <input id="nickname" type="text" maxlength="14" autocomplete="off" spellcheck="false" data-i18n-ph="home.nickPh">
+      </div>
+
+      <div class="skin-field">
+        <div class="skin-head">
+          <span class="field-label" id="skin-label" data-i18n="home.skinLabel"></span>
+          <small class="skin-hint" data-i18n="home.skinHint"></small>
+        </div>
+        <div id="skin-picker" class="skin-picker" role="group" aria-labelledby="skin-label"></div>
       </div>
 
       <div class="menu">
@@ -270,6 +278,6 @@
   </div>
 </div>
 
-<script src="script.js?v=5"></script>
+<script src="script.js?v=6"></script>
 </body>
 </html>
