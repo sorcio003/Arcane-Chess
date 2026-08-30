@@ -184,6 +184,23 @@ the files over HTTP:
 python -m http.server 8777
 ```
 
+### Publishing on GitHub Pages
+
+Push the repo and enable Pages: the game is plain static files, so it works as is — the meeting
+point lives elsewhere and needs nothing from Pages (see above).
+
+One catch worth knowing: Pages serves assets with `Cache-Control: max-age=600`, so browsers keep
+showing the previous `script.js` for a while after you publish — which looks exactly like a bug
+that is not there. `index.html` therefore loads its assets with a version marker:
+
+```html
+<link href="style.css?v=5" rel="stylesheet">
+<script src="script.js?v=5"></script>
+```
+
+**Bump that number whenever you publish a change.** Everyone gets the new files immediately,
+your friends included, instead of being stuck on a stale copy.
+
 ## 🛠️ Built with
 
 * **HTML5** — screen-based structure (home, lobby, join, match).
