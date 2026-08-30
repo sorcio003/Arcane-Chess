@@ -88,56 +88,86 @@ right there, on the target square, without ever leaving his own.
   * Whoever creates the game gets a **unique code** to share (e.g. `8VUC8`), or a
     **ready-made invite link** that opens the game with everything already filled in.
   * The friend joins from the *"Join with a code"* screen, or by opening the link.
-  * Both browsers connect to a small **relay** that forwards the messages. The host stays the
+  * Both browsers connect to a **meeting point** that forwards the messages. The host stays the
     referee: it validates every move from the opponent and syncs the state.
   * The host plays White; the joiner plays Black with the board flipped to their side.
 
-## 📡 The relay (playing across different networks)
+## 📡 Playing across different networks
 
-Two browsers sitting behind home routers cannot open a direct connection to each other — and on
-many lines (mobile, CGNAT, symmetric NAT) they never will, no matter how clever the NAT
-traversal gets. So online matches go through a **relay**: both players open an **outbound**
-connection to it, which passes through any network. No ports to forward, no STUN, no TURN.
+Two browsers behind home routers cannot open a direct connection to each other — and on many
+lines (mobile, CGNAT, symmetric NAT) they never will, however clever the NAT traversal. So the
+two players meet at a **third point** that both of them reach with an **outbound** connection,
+which passes through any network. No ports to forward, no STUN, no TURN.
 
-The relay is deliberately dumb — it forwards messages and nothing else. It does not know the
-rules, does not keep game state, does not validate moves. **The host is still the referee.**
+That meeting point never understands the game: it forwards messages and nothing else. It does
+not know the rules, keeps no game state, validates nothing. **The host is still the referee.**
 
-It has to be deployed once. The code is in [`server/`](server/), in two interchangeable flavours:
+There are two ways to get one, switchable under **Rete / Network**.
 
-* **Cloudflare Workers** (recommended) — serverless, free plan, WSS included, one Durable Object
-  per room:
+### Public MQTT broker — the default, nothing to set up
 
-  ```bash
-  cd server && npx wrangler deploy
-  ```
+Out of the box the game talks to a **public MQTT broker** over WebSocket. Nothing to deploy,
+no account, no key: it just works, which makes it a good fit for **GitHub Pages**, where you can
+only publish static files. The two players subscribe to a channel named after the game code and
+trade moves there.
 
-* **Node** — zero dependencies, the WebSocket protocol is implemented in the file itself:
+The client is written from scratch in `script.js` — about a hundred lines of MQTT 3.1.1 over
+WebSocket — so the game still ships with **zero runtime dependencies**.
 
-  ```bash
-  node server/relay.js 8790
-  ```
+Preconfigured broker, with two alternates if it ever misbehaves:
 
-Then paste the address into the game under **Rete / Network** — `https://` is accepted and
-converted to `wss://` automatically. To avoid doing it in every browser, put it straight into the
-source instead:
+```
+wss://broker.emqx.io:8084/mqtt          (default)
+wss://test.mosquitto.org:8081/mqtt
+wss://broker.hivemq.com:8884/mqtt
+```
+
+> ⚠️ **These are public test brokers.** No uptime guarantee, and — more importantly — **the
+> messages are not encrypted**: anyone who knew your game code could read along or interfere.
+> The code is 5 characters out of a 32-letter alphabet (~33 million combinations), so stumbling
+> onto yours is unlikely, but this is a door without a lock on a quiet street. Fine for a game
+> with friends; not for anything you would mind being seen.
+
+Since MQTT has no notion of a private recipient, the game addresses its own messages: every
+message carries a sender, replies meant for one player carry a recipient, and the host only
+accepts moves from the opponent it actually admitted. A third player knocking on a busy room
+gets turned away without disturbing the match in progress.
+
+### Your own relay — private and more reliable
+
+If you would rather not depend on a public service, deploy the relay in [`server/`](server/)
+once — Cloudflare Workers, free plan, then never touch it again:
+
+```bash
+cd server && npx wrangler deploy
+```
+
+Paste the address it prints under **Rete → Server tuo**. Note this does **not** conflict with
+GitHub Pages: Pages hosts the game, Cloudflare hosts the relay, they are two different
+addresses. And a Worker is not a server you start — nothing runs on your machine, which can be
+off while you play from your phone. (`node server/relay.js` is the same relay for local testing
+or a VPS.)
+
+To make it the default for everyone instead of a per-browser setting:
 
 ```js
 // script.js
+const DEFAULT_TRANSPORT = 'relay';
 const DEFAULT_RELAY = 'wss://arcane-chess-relay.yourname.workers.dev';
 ```
 
-**The invite link carries the address along**, so whoever creates the game can just share the
-link and the other player has nothing to configure.
+### Either way
 
-**Test button** — *Rete → Test the connection* opens a throwaway room on the relay and tells you
-whether it answered.
+**Both players must use the same meeting point**, or they simply will not see each other. The
+**invite link carries the address along**, so whoever opens it has nothing to configure — that
+is the recommended way to invite someone.
 
-See [`server/README.md`](server/README.md) for the deploy details and the wire protocol.
+**Test button** — *Rete → Test the connection* really opens a throwaway channel, sends a message
+and waits for it to come back, then says plainly whether it worked.
 
 > Note: this used to be a direct browser-to-browser connection over WebRTC (PeerJS). It only
 > worked when both players were on the same Wi-Fi, because PeerJS's default TURN servers
-> (`eu-0/us-0.turn.peerjs.com`) no longer resolve, leaving no relay to fall back on. The relay
-> replaces that whole layer — and removes the last external dependency at runtime.
+> (`eu-0/us-0.turn.peerjs.com`) no longer resolve, leaving no relay to fall back on.
 
 ## 🚀 Getting started
 
@@ -146,9 +176,9 @@ The game is entirely client-side.
 1. Clone or download the repository.
 2. Open `index.html` in a modern browser (Chrome, Firefox, Safari, Edge).
 
-Playing against the Bot works offline. Online mode needs a relay — see
-[The relay](#-the-relay-playing-across-different-networks). If you prefer serving the files over
-HTTP:
+Playing against the Bot works offline. Online mode works out of the box — see
+[Playing across different networks](#-playing-across-different-networks). If you prefer serving
+the files over HTTP:
 
 ```bash
 python -m http.server 8777
@@ -160,7 +190,8 @@ python -m http.server 8777
 * **CSS3** — custom dark theme, responsive layout, no framework.
 * **Vanilla JavaScript** — game engine, rules, rendering, bot and networking. No frameworks, no
   runtime dependencies: the online transport is a plain WebSocket.
-* **Cloudflare Workers / Node** — the relay for online matches (see the `server/` folder).
+* **MQTT over WebSocket** — hand-rolled client (~100 lines) for the default public meeting point.
+* **Cloudflare Workers / Node** — optional private relay for online matches (see the `server/` folder).
 * **Font Awesome / Google Fonts** — icons and typography.
 
 Rendering is **incremental**: the board and the hand are built once, and only what actually
@@ -172,7 +203,7 @@ captured — nothing flickers or restarts on every action.
 ```
 index.html    screens: home, lobby, join, match, modals
 style.css     theme, board, cards, responsive layout
-script.js     i18n, rules, engine, bot, relay networking, rendering
+script.js     i18n, rules, engine, bot, networking (MQTT + relay), rendering
 favicon.svg   icon (King + card + blood drop)
 server/       the relay: worker.js (Cloudflare) and relay.js (Node)
 ```

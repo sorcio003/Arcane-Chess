@@ -43,35 +43,40 @@ const i18n = {
         },
         net: {
             unavailable: "Modalita' online non disponibile: questo browser non supporta i WebSocket. Puoi comunque giocare contro il Bot.",
-            note: "Il gioco funziona anche offline contro il Bot. Le partite online passano da un relay: si gioca da qualsiasi rete.",
+            note: "Il gioco funziona anche offline contro il Bot. Le partite online passano da un punto d'incontro pubblico: si gioca da qualsiasi rete, senza configurare niente.",
             error: "Errore di rete. Torno alla home.",
             oppLeft: "L'avversario ha lasciato la partita.",
             youLeft: "Hai lasciato la partita.",
-            norelay: "Nessun relay configurato: apri \"Rete\" e incolla l'indirizzo del tuo server.",
-            unreachable: "Relay non raggiungibile. Controlla l'indirizzo in \"Rete\" e che il server sia acceso.",
+            noaddr: "Nessun indirizzo configurato: apri \"Rete\" e scegli come collegarti.",
+            unreachable: "Non riesco a collegarmi. Controlla l'indirizzo in \"Rete\".",
             settings: "Rete"
         },
         netcfg: {
             title: "Impostazioni di rete",
-            sub: "Le partite online passano da un piccolo relay: entrambi i browser si collegano a lui e lui inoltra le mosse. Cosi' si gioca da qualsiasi rete, senza aprire porte e senza NAT di mezzo.",
+            sub: "Le partite online passano da un punto d'incontro: entrambi i browser si collegano li' e si scambiano le mosse. Non serve stare sulla stessa rete ne' aprire porte sul router.",
+            modeMqtt: "Broker pubblico",
+            modeRelay: "Server tuo",
+            brokerLabel: "Broker MQTT",
+            brokerPh: "wss://broker.emqx.io:8084/mqtt",
+            brokerHint: "Pronto all'uso, senza registrarsi: funziona anche su GitHub Pages. Alternative: wss://test.mosquitto.org:8081/mqtt, wss://broker.hivemq.com:8884/mqtt. Attenzione: e' un servizio pubblico, i messaggi non sono cifrati e chi conoscesse il codice partita potrebbe leggerli.",
             relayLabel: "Indirizzo del relay",
-            relayHint: "Esempio: wss://arcane-chess-relay.tuonome.workers.dev - oppure ws://192.168.1.10:8790 se lo fai girare in locale.",
-            ph: "wss://il-tuo-relay.workers.dev",
+            relayPh: "wss://il-tuo-relay.workers.dev",
+            relayHint: "Il codice sta in server/: \"npx wrangler deploy\" lo mette su Cloudflare una volta sola, gratis. Privato e piu' affidabile del broker pubblico.",
             save: "Salva",
-            clear: "Rimuovi",
-            saved: "Relay salvato.",
-            cleared: "Relay rimosso.",
+            reset: "Ripristina",
+            saved: "Impostazioni salvate.",
+            resetDone: "Impostazioni ripristinate.",
             invalid: "Indirizzo non valido.",
             test: "Prova la connessione",
             testing: "Test in corso...",
-            relayOk: "Relay raggiungibile",
-            relayKo: "Relay non raggiungibile",
-            relayNone: "Nessun relay configurato",
+            ok: "Collegamento riuscito",
+            ko: "Collegamento fallito",
+            none: "Nessun indirizzo configurato",
             verdictGood: "Tutto ok: puoi giocare con chiunque, su qualsiasi rete.",
-            verdictBad: "Il relay non risponde: controlla l'indirizzo, o che il server sia avviato.",
-            verdictNone: "Configura un relay per giocare online.",
-            help: "Il codice del server sta in server/. Deploy su Cloudflare Workers con \"npx wrangler deploy\" (piano gratuito), oppure \"node server/relay.js\" su una macchina raggiungibile. Chi crea la partita puo' condividere il link d'invito, che porta l'indirizzo con se'.",
-            imported: "Relay dell'invito importato."
+            verdictBad: "Nessuna risposta: prova un altro indirizzo.",
+            verdictNone: "Scegli un indirizzo per giocare online.",
+            help: "I due giocatori devono usare lo stesso punto d'incontro. Il link d'invito se lo porta dietro, quindi chi lo apre non deve configurare niente.",
+            imported: "Impostazioni di rete dell'invito applicate."
         },
         game: {
             you: "Tu", bot: "Bot", opponent: "Avversario",
@@ -194,35 +199,40 @@ const i18n = {
         },
         net: {
             unavailable: "Online mode unavailable: this browser has no WebSocket support. You can still play against the Bot.",
-            note: "The game works offline against the Bot. Online matches go through a relay, so any network works.",
+            note: "The game works offline against the Bot. Online matches go through a public meeting point, so any network works with no setup.",
             error: "Network error. Returning home.",
             oppLeft: "Your opponent left the game.",
             youLeft: "You left the game.",
-            norelay: "No relay configured: open \"Network\" and paste your server address.",
-            unreachable: "Relay unreachable. Check the address under \"Network\" and that the server is running.",
+            noaddr: "No address configured: open \"Network\" and pick how to connect.",
+            unreachable: "Cannot connect. Check the address under \"Network\".",
             settings: "Network"
         },
         netcfg: {
             title: "Network settings",
-            sub: "Online matches go through a small relay: both browsers connect to it and it forwards the moves. That way any network works, with no ports to open and no NAT in the way.",
+            sub: "Online matches go through a meeting point: both browsers connect to it and exchange the moves there. No need to be on the same network, and no ports to forward.",
+            modeMqtt: "Public broker",
+            modeRelay: "Your own server",
+            brokerLabel: "MQTT broker",
+            brokerPh: "wss://broker.emqx.io:8084/mqtt",
+            brokerHint: "Ready to use, no signup: works on GitHub Pages too. Alternatives: wss://test.mosquitto.org:8081/mqtt, wss://broker.hivemq.com:8884/mqtt. Careful: it is a public service, messages are not encrypted and anyone knowing the game code could read them.",
             relayLabel: "Relay address",
-            relayHint: "For example: wss://arcane-chess-relay.yourname.workers.dev - or ws://192.168.1.10:8790 if you run it locally.",
-            ph: "wss://your-relay.workers.dev",
+            relayPh: "wss://your-relay.workers.dev",
+            relayHint: "The code is in server/: \"npx wrangler deploy\" puts it on Cloudflare once, for free. Private and more reliable than the public broker.",
             save: "Save",
-            clear: "Remove",
-            saved: "Relay saved.",
-            cleared: "Relay removed.",
+            reset: "Reset",
+            saved: "Settings saved.",
+            resetDone: "Settings restored.",
             invalid: "Invalid address.",
             test: "Test the connection",
             testing: "Testing...",
-            relayOk: "Relay reachable",
-            relayKo: "Relay unreachable",
-            relayNone: "No relay configured",
+            ok: "Connected",
+            ko: "Connection failed",
+            none: "No address configured",
             verdictGood: "All good: you can play with anyone, on any network.",
-            verdictBad: "The relay is not answering: check the address, or that the server is running.",
-            verdictNone: "Configure a relay to play online.",
-            help: "The server code lives in server/. Deploy it to Cloudflare Workers with \"npx wrangler deploy\" (free plan), or run \"node server/relay.js\" on a reachable machine. Whoever creates the game can share the invite link, which carries the address along.",
-            imported: "Relay imported from the invite."
+            verdictBad: "No answer: try another address.",
+            verdictNone: "Pick an address to play online.",
+            help: "Both players must use the same meeting point. The invite link carries it along, so whoever opens it has nothing to configure.",
+            imported: "Network settings applied from the invite."
         },
         game: {
             you: "You", bot: "Bot", opponent: "Opponent",
@@ -1432,23 +1442,40 @@ function buildRulesModal() {
     $('rules-body').innerHTML = html;
 }
 
-/* ============================== RETE (relay) ============================== */
-/* I due browser non si parlano piu' direttamente: si collegano entrambi a un
-   relay WebSocket che inoltra i messaggi. Il relay non conosce le regole, non
-   tiene stato: l'arbitro resta l'host. Cosi' la partita funziona su qualsiasi
-   rete, senza STUN, TURN, NAT o porte da aprire.
-   Il server sta in server/ (Cloudflare Workers oppure Node). */
+/* ============================== RETE ==============================
+   Due trasporti, stessa interfaccia (openRoom -> link con send/close):
+
+   - MQTT su broker pubblico (default): zero account, zero deploy. I due
+     browser si iscrivono a un canale intitolato al codice partita. Va bene
+     per GitHub Pages, dove non c'e' nessun backend da mettere.
+   - Relay proprio (server/): WebSocket dedicato, privato e affidabile.
+
+   In entrambi i casi il relay/broker non conosce le regole: inoltra e basta,
+   l'arbitro resta l'host. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-/* Dopo il deploy incolla qui il tuo relay (es. 'wss://arcane-chess-relay.tuonome.workers.dev').
-   In alternativa si imposta dal pannello "Rete" e resta salvato nel browser. */
+/* Broker MQTT pubblici raggiungibili in WSS (quindi anche da pagine https). */
+const DEFAULT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+const MQTT_ROOT = 'arcanechess7x7';
+const MQTT_KEEPALIVE = 30;          /* secondi: il will parte entro ~45s dal crollo */
+
+/* Dopo il deploy incolla qui il tuo relay (es. 'wss://arcane-chess-relay.tuonome.workers.dev')
+   e metti DEFAULT_TRANSPORT su 'relay' per usarlo di default. */
 const DEFAULT_RELAY = '';
+const DEFAULT_TRANSPORT = 'mqtt';   /* 'mqtt' | 'relay' */
 
+const TRANSPORT_KEY = 'ac_transport';
+const BROKER_KEY = 'ac_broker';
 const RELAY_KEY = 'ac_relay';
-const KEEPALIVE_MS = 25000;
 
-let sock = null;
-let keepAlive = 0;
+let link = null;                    /* trasporto attivo: { send, close } */
+let peerBound = false;              /* un avversario e' gia' entrato nella stanza */
+let boundPeer = null;               /* chi e' il mio avversario, per nome di battesimo */
+
+/* Su MQTT il canale e' una piazza: chi pubblica parla a tutti gli iscritti.
+   Ogni messaggio porta il mittente, e chi ha un destinatario preciso viaggia
+   con "to": cosi' un terzo che bussa non fa danni a chi sta gia' giocando. */
+const myPeerId = Math.random().toString(36).slice(2, 10);
 
 function makeCode(len) {
     let s = '';
@@ -1456,8 +1483,21 @@ function makeCode(len) {
     return s;
 }
 
-/* Accetta wss://, https://, o anche solo l'host: normalizza tutto in ws/wss. */
-function normalizeRelay(value) {
+/* ---- Configurazione ---- */
+function store(key, value) {
+    try {
+        if (value) localStorage.setItem(key, value);
+        else localStorage.removeItem(key);
+    } catch (e) { /* ignore */ }
+    return value;
+}
+
+function stored(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+
+/* Accetta wss://, https:// o il solo host: normalizza tutto in ws/wss. */
+function normalizeWs(value) {
     let v = String(value || '').trim().replace(/\/+$/, '');
     if (!v) return '';
     if (/^https:\/\//i.test(v)) return 'wss://' + v.slice(8);
@@ -1466,44 +1506,201 @@ function normalizeRelay(value) {
     return (location.protocol === 'https:' ? 'wss://' : 'ws://') + v;
 }
 
-function relayUrl() {
-    let stored = null;
-    try { stored = localStorage.getItem(RELAY_KEY); } catch (e) { /* ignore */ }
-    return normalizeRelay(stored || DEFAULT_RELAY);
+function transport() {
+    return stored(TRANSPORT_KEY) === 'relay' ? 'relay'
+         : stored(TRANSPORT_KEY) === 'mqtt' ? 'mqtt'
+         : DEFAULT_TRANSPORT;
+}
+function setTransport(kind) { store(TRANSPORT_KEY, kind === 'relay' ? 'relay' : 'mqtt'); }
+
+function brokerUrl() { return normalizeWs(stored(BROKER_KEY) || DEFAULT_BROKER); }
+function saveBroker(v) { const u = normalizeWs(v); store(BROKER_KEY, u); return u; }
+
+function relayUrl() { return normalizeWs(stored(RELAY_KEY) || DEFAULT_RELAY); }
+function saveRelay(v) { const u = normalizeWs(v); store(RELAY_KEY, u); return u; }
+
+/* Indirizzo del trasporto attualmente scelto. */
+function netAddress() { return transport() === 'relay' ? relayUrl() : brokerUrl(); }
+function netAvailable() { return typeof WebSocket === 'function' && !!netAddress(); }
+
+/* ============================== MQTT 3.1.1 (QoS 0) ==============================
+   Solo quel che serve: CONNECT, SUBSCRIBE, PUBLISH, PING, DISCONNECT.
+   Bastano un centinaio di righe e il gioco resta senza dipendenze esterne. */
+
+function mqttLen(n) {
+    const out = [];
+    do {
+        let b = n % 128;
+        n = Math.floor(n / 128);
+        if (n > 0) b |= 0x80;
+        out.push(b);
+    } while (n > 0);
+    return out;
 }
 
-function saveRelay(value) {
-    const url = normalizeRelay(value);
-    try {
-        if (url) localStorage.setItem(RELAY_KEY, url);
-        else localStorage.removeItem(RELAY_KEY);
-    } catch (e) { /* ignore */ }
-    return url;
+/* Stringa MQTT: 2 byte di lunghezza + UTF-8. Vale anche per il will. */
+function mqttStr(s) {
+    const bytes = new TextEncoder().encode(s);
+    return [bytes.length >> 8, bytes.length & 255].concat(Array.from(bytes));
 }
 
-function netAvailable() { return typeof WebSocket === 'function' && !!relayUrl(); }
+function mqttPacket(header, body) {
+    return new Uint8Array([header].concat(mqttLen(body.length), body));
+}
 
-function destroyPeer() {
-    if (keepAlive) { clearInterval(keepAlive); keepAlive = 0; }
-    if (sock) {
-        sock.onopen = sock.onmessage = sock.onerror = sock.onclose = null;
-        try { sock.close(); } catch (e) { /* ignore */ }
+function mqttConnect(clientId, willTopic, willMsg) {
+    let body = mqttStr('MQTT').concat([
+        4,                                          /* livello 3.1.1 */
+        0x06,                                       /* clean session + will */
+        MQTT_KEEPALIVE >> 8, MQTT_KEEPALIVE & 255
+    ]);
+    body = body.concat(mqttStr(clientId), mqttStr(willTopic), mqttStr(willMsg));
+    return mqttPacket(0x10, body);
+}
+
+function mqttSubscribe(id, topic) {
+    return mqttPacket(0x82, [id >> 8, id & 255].concat(mqttStr(topic), [0]));
+}
+
+function mqttPublish(topic, payload) {
+    return mqttPacket(0x30, mqttStr(topic).concat(Array.from(new TextEncoder().encode(payload))));
+}
+
+const MQTT_PING = new Uint8Array([0xc0, 0x00]);
+const MQTT_BYE = new Uint8Array([0xe0, 0x00]);
+
+function bytesConcat(a, b) {
+    const out = new Uint8Array(a.length + b.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    return out;
+}
+
+/* Estrae i pacchetti completi; quello che avanza resta per il giro dopo. */
+function mqttDecode(state) {
+    const out = [];
+    for (;;) {
+        const buf = state.buf;
+        if (buf.length < 2) break;
+
+        let len = 0, mult = 1, i = 1, complete = false;
+        while (i < buf.length && i <= 4) {
+            const b = buf[i++];
+            len += (b & 127) * mult;
+            mult *= 128;
+            if ((b & 128) === 0) { complete = true; break; }
+        }
+        if (!complete || buf.length < i + len) break;
+
+        out.push({ type: buf[0] >> 4, body: buf.subarray(i, i + len) });
+        state.buf = buf.subarray(i + len);
     }
-    sock = null;
+    return out;
 }
 
-function send(msg) {
-    if (sock && sock.readyState === WebSocket.OPEN) {
-        try { sock.send(JSON.stringify(msg)); } catch (e) { /* ignore */ }
-    }
+function mqttReadPublish(body) {
+    const tlen = (body[0] << 8) | body[1];
+    const dec = new TextDecoder();
+    return {
+        topic: dec.decode(body.subarray(2, 2 + tlen)),
+        payload: dec.decode(body.subarray(2 + tlen))
+    };
 }
 
-/* Apre la stanza sul relay.
-   handlers.control -> messaggi di servizio del relay ('joined', 'peer-joined',
-   'peer-left', 'no-room', 'full'); handlers.game -> messaggi dell'avversario;
-   handlers.fail -> il relay non e' raggiungibile; handlers.gone -> connessione
-   caduta dopo essere stata aperta. */
-function openRoom(code, role, handlers) {
+/* ---- Stanza su broker MQTT ---- */
+function openMqttRoom(code, role, handlers) {
+    const base = brokerUrl();
+    if (!base) { handlers.fail(); return null; }
+
+    const mine = MQTT_ROOT + '/' + code + '/' + (role === 'host' ? 'h' : 'g');
+    const theirs = MQTT_ROOT + '/' + code + '/' + (role === 'host' ? 'g' : 'h');
+
+    let ws;
+    try { ws = new WebSocket(base, 'mqtt'); }
+    catch (e) { handlers.fail(); return null; }
+    ws.binaryType = 'arraybuffer';
+
+    const state = { buf: new Uint8Array(0) };
+    let ping = 0;
+    let lonely = 0;              /* il guest aspetta una risposta dall'host */
+    let ready = false;
+    let closed = false;
+
+    const stop = () => {
+        if (ping) { clearInterval(ping); ping = 0; }
+        if (lonely) { clearTimeout(lonely); lonely = 0; }
+    };
+
+    const api = {
+        send(obj) {
+            if (!ready || ws.readyState !== WebSocket.OPEN) return;
+            try { ws.send(mqttPublish(mine, JSON.stringify(obj))); } catch (e) { /* ignore */ }
+        },
+        close() {
+            closed = true;
+            stop();
+            ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+            /* Uscita pulita: cosi' il broker non spara il will. */
+            try { if (ws.readyState === WebSocket.OPEN) ws.send(MQTT_BYE); } catch (e) { /* ignore */ }
+            try { ws.close(); } catch (e) { /* ignore */ }
+        }
+    };
+
+    ws.onopen = () => {
+        const id = 'ac' + Math.random().toString(36).slice(2, 12);
+        /* Will: se cado di colpo, il broker avvisa l'altro al posto mio. */
+        ws.send(mqttConnect(id, mine, JSON.stringify({ _r: 'peer-left', from: myPeerId })));
+    };
+
+    ws.onmessage = ev => {
+        if (closed) return;
+        state.buf = bytesConcat(state.buf, new Uint8Array(ev.data));
+
+        mqttDecode(state).forEach(pkt => {
+            if (pkt.type === 2) {                                  /* CONNACK */
+                if (pkt.body[1] !== 0) { handlers.fail(); api.close(); return; }
+                ws.send(mqttSubscribe(1, theirs));
+                return;
+            }
+            if (pkt.type === 9) {                                  /* SUBACK */
+                ready = true;
+                ping = setInterval(() => {
+                    try { ws.send(MQTT_PING); } catch (e) { /* ignore */ }
+                }, (MQTT_KEEPALIVE / 2) * 1000);
+
+                /* Nessun server tiene le stanze: se l'host non risponde,
+                   il codice non esiste (o non e' piu' collegato). */
+                if (role === 'guest') {
+                    lonely = setTimeout(() => { if (!closed) handlers.control('no-room'); }, 9000);
+                }
+                handlers.control('joined');
+                return;
+            }
+            if (pkt.type !== 3) return;                            /* solo PUBLISH */
+
+            const msg = mqttReadPublish(pkt.body);
+            if (msg.topic !== theirs) return;
+
+            let m;
+            try { m = JSON.parse(msg.payload); } catch (e) { return; }
+            if (!m || typeof m !== 'object') return;
+            if (m.from === myPeerId) return;              /* eco di me stesso */
+            if (m.to && m.to !== myPeerId) return;        /* parlano con un altro */
+
+            if (lonely) { clearTimeout(lonely); lonely = 0; }
+            if (m._r) handlers.control(m._r, m);
+            else handlers.game(m);
+        });
+    };
+
+    ws.onerror = () => { if (!ready) handlers.fail(); };
+    ws.onclose = () => { stop(); if (ready) handlers.gone(); else handlers.fail(); };
+
+    return api;
+}
+
+/* ---- Stanza sul relay dedicato ---- */
+function openRelayRoom(code, role, handlers) {
     const base = relayUrl();
     if (!base) { handlers.fail(); return null; }
 
@@ -1512,27 +1709,60 @@ function openRoom(code, role, handlers) {
     catch (e) { handlers.fail(); return null; }
 
     let opened = false;
+    let ping = 0;
+
+    const api = {
+        send(obj) {
+            if (ws.readyState !== WebSocket.OPEN) return;
+            try { ws.send(JSON.stringify(obj)); } catch (e) { /* ignore */ }
+        },
+        close() {
+            if (ping) { clearInterval(ping); ping = 0; }
+            ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+            try { ws.close(); } catch (e) { /* ignore */ }
+        }
+    };
 
     ws.onopen = () => {
         opened = true;
         /* Tiene sveglia la connessione: i messaggi sconosciuti vengono ignorati. */
-        if (keepAlive) clearInterval(keepAlive);
-        keepAlive = setInterval(() => send({ t: 'ka' }), KEEPALIVE_MS);
+        ping = setInterval(() => api.send({ t: 'ka' }), 25000);
     };
 
     ws.onmessage = ev => {
         let m;
         try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (!m || typeof m !== 'object') return;
-        if (m._r) handlers.control(m._r);
+        if (m.to && m.to !== myPeerId) return;
+        if (m._r) handlers.control(m._r, m);
         else handlers.game(m);
     };
 
     ws.onerror = () => { if (!opened) handlers.fail(); };
-    ws.onclose = () => { if (opened) handlers.gone(); else handlers.fail(); };
+    ws.onclose = () => {
+        if (ping) { clearInterval(ping); ping = 0; }
+        if (opened) handlers.gone(); else handlers.fail();
+    };
 
-    return ws;
+    return api;
 }
+
+/* handlers.control -> 'joined' | 'peer-joined' | 'peer-left' | 'no-room' | 'full'
+   handlers.game    -> messaggi dell'avversario
+   handlers.fail    -> non si e' riusciti ad agganciare il trasporto
+   handlers.gone    -> connessione caduta dopo essere stata aperta */
+function openRoom(code, role, handlers) {
+    return transport() === 'relay'
+        ? openRelayRoom(code, role, handlers)
+        : openMqttRoom(code, role, handlers);
+}
+
+function destroyPeer() {
+    if (link) { try { link.close(); } catch (e) { /* ignore */ } }
+    link = null;
+}
+
+function send(msg) { if (link) link.send(Object.assign({ from: myPeerId }, msg)); }
 
 /* ---- HOST ---- */
 function setLobbyError(msg) {
@@ -1544,10 +1774,12 @@ function setLobbyError(msg) {
 function hostGame() {
     const nick = getNickname();
     if (!nick) { toast(t('home.needNick'), 'warn'); $('nickname').focus(); return; }
-    if (!netAvailable()) { toast(t('net.norelay'), 'err'); openNetPanel(); return; }
+    if (!netAvailable()) { toast(t('net.noaddr'), 'err'); openNetPanel(); return; }
 
     destroyPeer();
     mode = 'host';
+    peerBound = false;
+    boundPeer = null;
     showScreen('screen-lobby');
 
     let attempts = 0;
@@ -1560,11 +1792,13 @@ function hostGame() {
         $('lobby-status').parentElement.classList.remove('error');
         $('lobby-spinner').style.display = '';
 
-        sock = openRoom(roomCode, 'host', {
-            control: kind => {
+        link = openRoom(roomCode, 'host', {
+            control: (kind, m) => {
                 if (kind === 'joined') { $('lobby-status').textContent = t('lobby.waiting'); return; }
                 if (kind === 'peer-joined') { $('lobby-status').textContent = t('lobby.joined'); return; }
                 if (kind === 'peer-left') {
+                    /* Se cade un curioso che aveva bussato, non e' affar mio. */
+                    if (boundPeer && m && m.from && m.from !== boundPeer) return;
                     if (started) onOpponentLeft();
                     else $('lobby-status').textContent = t('lobby.waiting');
                     return;
@@ -1587,12 +1821,22 @@ function handleHostData(m, myNick) {
     if (!m || typeof m !== 'object') return;
 
     if (m.t === 'hello') {
-        /* Il guest si e' presentato: avvio la partita e sincronizzo */
+        /* Senza un server a fare da buttafuori, la stanza me la chiudo da solo:
+           il rifiuto va indirizzato, o lo incasserebbe anche chi sta giocando. */
+        if (peerBound && m.from !== boundPeer) { send({ _r: 'full', to: m.from }); return; }
+        if (peerBound) return;
+
+        peerBound = true;
+        boundPeer = m.from || null;
+
         startGame('host', myNick, String(m.name || t('game.opponent')).slice(0, 14));
-        send({ t: 'start', color: 'black', names, code: roomCode });
+        send({ t: 'start', to: m.from, color: 'black', names, code: roomCode });
         syncToGuest();
         return;
     }
+
+    /* Le mosse le accetto solo dal mio avversario, non da chi passava di li'. */
+    if (boundPeer && m.from !== boundPeer) return;
     if (m.t === 'act') { applyGuestAction(m); return; }
     if (m.t === 'bye') { onOpponentLeft(); return; }
 }
@@ -1665,7 +1909,7 @@ function clearJoinError() {
 function joinGame() {
     const nick = getNickname();
     if (!nick) { toast(t('home.needNick'), 'warn'); showScreen('screen-home'); $('nickname').focus(); return; }
-    if (!netAvailable()) { setJoinError(t('net.norelay')); return; }
+    if (!netAvailable()) { setJoinError(t('net.noaddr')); return; }
 
     const code = $('join-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length < 4) { setJoinError(t('join.badCode')); return; }
@@ -1685,10 +1929,11 @@ function joinGame() {
         handled = true;
         setJoinError(msg);
         destroyPeer();
+        mode = 'bot';          /* tentativo chiuso: torno pronto per un altro invito */
     };
 
-    sock = openRoom(code, 'guest', {
-        control: kind => {
+    link = openRoom(code, 'guest', {
+        control: (kind, m) => {
             if (kind === 'joined') { settled = true; send({ t: 'hello', name: nick }); return; }
             if (kind === 'no-room') { fail(t('join.notFound')); return; }
             if (kind === 'full') { fail(t('join.busy')); return; }
@@ -1771,26 +2016,45 @@ function copyText(text, msg) {
     ta.remove(); done();
 }
 
+function paintNetMode() {
+    const kind = transport();
+    setClass($('seg-mqtt'), 'on', kind === 'mqtt');
+    setClass($('seg-relay'), 'on', kind === 'relay');
+    $('net-mqtt').hidden = kind !== 'mqtt';
+    $('net-relay').hidden = kind === 'mqtt';
+}
+
 function openNetPanel() {
+    $('broker-input').value = brokerUrl();
     $('relay-input').value = relayUrl();
+    paintNetMode();
     $('net-report').hidden = true;
     $('net-report').innerHTML = '';
     openModal('modal-net');
 }
 
-function saveRelayFromInput() {
-    const raw = $('relay-input').value.trim();
-    const url = saveRelay(raw);
-    if (raw && !url) { toast(t('netcfg.invalid'), 'err'); return; }
-    $('relay-input').value = url;
-    toast(url ? t('netcfg.saved') : t('netcfg.cleared'));
+function pickTransport(kind) {
+    setTransport(kind);
+    paintNetMode();
+    $('net-report').hidden = true;
 }
 
-function clearRelayConfig() {
-    saveRelay('');
-    $('relay-input').value = '';
+function saveNetConfig() {
+    const relay = transport() === 'relay';
+    const input = $(relay ? 'relay-input' : 'broker-input');
+    const raw = input.value.trim();
+    const url = relay ? saveRelay(raw) : saveBroker(raw);
+
+    if (raw && !url) { toast(t('netcfg.invalid'), 'err'); return; }
+    input.value = relay ? url : brokerUrl();
+    toast(t('netcfg.saved'));
+}
+
+function resetNetConfig() {
+    if (transport() === 'relay') { saveRelay(''); $('relay-input').value = ''; }
+    else { saveBroker(''); $('broker-input').value = brokerUrl(); }
     $('net-report').hidden = true;
-    toast(t('netcfg.cleared'));
+    toast(t('netcfg.resetDone'));
 }
 
 function reportRow(cls, icon, text) {
@@ -1823,15 +2087,55 @@ function probeRelay(url, ms) {
     });
 }
 
+/* Giro completo sul broker: connetti, iscriviti a un canale usa-e-getta,
+   pubblica, e verifica che il messaggio torni indietro. */
+function probeMqtt(url, ms) {
+    return new Promise(resolve => {
+        let ws;
+        let done = false;
+        const topic = MQTT_ROOT + '/probe/' + makeCode(8);
+        const finish = ok => {
+            if (done) return;
+            done = true;
+            if (ws) { ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null; try { ws.close(); } catch (e) { /* ignore */ } }
+            resolve(ok);
+        };
+
+        try { ws = new WebSocket(url, 'mqtt'); }
+        catch (e) { resolve(false); return; }
+        ws.binaryType = 'arraybuffer';
+
+        const state = { buf: new Uint8Array(0) };
+
+        ws.onopen = () => ws.send(mqttConnect('ac' + Math.random().toString(36).slice(2, 12), topic, 'x'));
+        ws.onmessage = ev => {
+            state.buf = bytesConcat(state.buf, new Uint8Array(ev.data));
+            mqttDecode(state).forEach(pkt => {
+                if (pkt.type === 2) {
+                    if (pkt.body[1] !== 0) { finish(false); return; }
+                    ws.send(mqttSubscribe(1, topic));
+                } else if (pkt.type === 9) {
+                    ws.send(mqttPublish(topic, 'ping'));
+                } else if (pkt.type === 3) {
+                    finish(mqttReadPublish(pkt.body).payload === 'ping');
+                }
+            });
+        };
+        ws.onerror = () => finish(false);
+        ws.onclose = () => finish(false);
+        setTimeout(() => finish(false), ms);
+    });
+}
+
 function runNetTest() {
     const btn = $('btn-net-test');
     const box = $('net-report');
-    const url = relayUrl();
+    const url = netAddress();
 
     box.hidden = false;
 
     if (!url) {
-        box.innerHTML = reportRow('ko', 'fa-circle-xmark', t('netcfg.relayNone')) +
+        box.innerHTML = reportRow('ko', 'fa-circle-xmark', t('netcfg.none')) +
             '<li class="verdict">' + escapeHtml(t('netcfg.verdictNone')) + '</li>';
         return;
     }
@@ -1839,21 +2143,30 @@ function runNetTest() {
     btn.disabled = true;
     box.innerHTML = reportRow('warn', 'fa-hourglass-half', t('netcfg.testing'));
 
-    probeRelay(url, 8000).then(ok => {
+    const probe = transport() === 'relay' ? probeRelay(url, 8000) : probeMqtt(url, 10000);
+    probe.then(ok => {
         box.innerHTML =
-            (ok ? reportRow('ok', 'fa-circle-check', t('netcfg.relayOk') + ' - ' + url)
-                : reportRow('ko', 'fa-circle-xmark', t('netcfg.relayKo') + ' - ' + url)) +
+            (ok ? reportRow('ok', 'fa-circle-check', t('netcfg.ok') + ' - ' + url)
+                : reportRow('ko', 'fa-circle-xmark', t('netcfg.ko') + ' - ' + url)) +
             '<li class="verdict">' + escapeHtml(ok ? t('netcfg.verdictGood') : t('netcfg.verdictBad')) + '</li>';
         btn.disabled = false;
     });
 }
 
-/* ---- Link d'invito: codice partita + indirizzo del relay ---- */
+/* ---- Link d'invito: codice partita + impostazioni di rete ---- */
+/* L'indirizzo viaggia sempre nel link: i due giocatori devono trovarsi sullo
+   stesso punto d'incontro, altrimenti non si vedono. */
 function inviteLink(code) {
     const base = location.href.split('#')[0];
     let hash = '#g=' + encodeURIComponent(code);
-    const relay = relayUrl();
-    if (relay) hash += '&s=' + encodeURIComponent(relay);
+
+    if (transport() === 'relay') {
+        const url = relayUrl();
+        if (url) hash += '&s=' + encodeURIComponent(url);
+    } else {
+        const url = brokerUrl();
+        if (url) hash += '&m=' + encodeURIComponent(url);
+    }
     return base + hash;
 }
 
@@ -1869,23 +2182,26 @@ function readInvite() {
     if (!params.g) return null;
 
     const out = { code: decodeURIComponent(params.g).toUpperCase().replace(/[^A-Z0-9]/g, '') };
-    if (params.s) {
-        const relay = normalizeRelay(decodeURIComponent(params.s));
-        if (relay) out.relay = relay;
-    }
+    if (params.s) out.relay = normalizeWs(decodeURIComponent(params.s));
+    if (params.m) out.broker = normalizeWs(decodeURIComponent(params.m));
     return out.code ? out : null;
 }
 
-/* Il link d'invito porta anche l'indirizzo del relay, cosi' chi lo apre non
-   deve configurare nulla: gli basta il link. */
+/* Le impostazioni dell'invito hanno la precedenza sulle mie: se non uso lo
+   stesso punto d'incontro dell'host, la partita non parte proprio. */
 function applyInvite() {
     const invite = readInvite();
     if (!invite) return;
 
     try { history.replaceState(null, '', location.href.split('#')[0]); } catch (e) { /* ignore */ }
 
-    if (invite.relay && !relayUrl()) {
+    if (invite.relay && (invite.relay !== relayUrl() || transport() !== 'relay')) {
         saveRelay(invite.relay);
+        setTransport('relay');
+        toast(t('netcfg.imported'));
+    } else if (invite.broker && (invite.broker !== brokerUrl() || transport() !== 'mqtt')) {
+        saveBroker(invite.broker);
+        setTransport('mqtt');
         toast(t('netcfg.imported'));
     }
 
@@ -1950,8 +2266,10 @@ function bindEvents() {
         b.addEventListener('click', openNetPanel);
     });
     $('btn-net-close').addEventListener('click', () => closeModal('modal-net'));
-    $('btn-relay-save').addEventListener('click', saveRelayFromInput);
-    $('btn-relay-clear').addEventListener('click', clearRelayConfig);
+    $('seg-mqtt').addEventListener('click', () => pickTransport('mqtt'));
+    $('seg-relay').addEventListener('click', () => pickTransport('relay'));
+    $('btn-net-save').addEventListener('click', saveNetConfig);
+    $('btn-net-reset').addEventListener('click', resetNetConfig);
     $('btn-net-test').addEventListener('click', runNetTest);
 
     $('end-turn-btn').addEventListener('click', requestEndTurn);
@@ -1986,7 +2304,9 @@ function bindEvents() {
     window.addEventListener('beforeunload', () => { if (mode !== 'bot') send({ t: 'bye' }); });
 
     /* Link d'invito aperto a pagina gia' caricata: cambia solo l'hash, niente reload. */
-    window.addEventListener('hashchange', () => { if (mode === 'bot') applyInvite(); });
+    window.addEventListener('hashchange', () => {
+        if (!$('screen-game').classList.contains('active')) applyInvite();
+    });
 }
 
 /* ============================== AVVIO ============================== */

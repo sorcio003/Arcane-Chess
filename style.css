@@ -1035,3 +1035,27 @@ body {
     color: var(--txt);
     text-align: center;
 }
+
+/* ---------- Selettore del trasporto ---------- */
+.seg {
+    display: flex; gap: 6px;
+    background: #070b12;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 18px;
+}
+.seg-btn {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 9px 10px;
+    border: 0; border-radius: 8px;
+    background: transparent;
+    color: var(--txt-2);
+    font: inherit; font-size: .82rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .18s, color .18s;
+}
+.seg-btn:hover { color: var(--txt); background: rgba(255, 255, 255, .04); }
+.seg-btn.on { background: var(--accent-2); color: #fff; }
+.seg-btn.on:hover { background: var(--accent-2); }

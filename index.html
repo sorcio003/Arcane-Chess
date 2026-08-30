@@ -239,13 +239,26 @@
     <div class="modal-body">
       <p class="panel-sub" data-i18n="netcfg.sub"></p>
 
-      <label class="field-label" for="relay-input" data-i18n="netcfg.relayLabel"></label>
-      <input id="relay-input" class="net-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" data-i18n-ph="netcfg.ph">
-      <p class="net-hint" data-i18n="netcfg.relayHint"></p>
+      <div class="seg">
+        <button id="seg-mqtt" class="seg-btn"><i class="fas fa-tower-broadcast"></i> <span data-i18n="netcfg.modeMqtt"></span></button>
+        <button id="seg-relay" class="seg-btn"><i class="fas fa-server"></i> <span data-i18n="netcfg.modeRelay"></span></button>
+      </div>
+
+      <div id="net-mqtt">
+        <label class="field-label" for="broker-input" data-i18n="netcfg.brokerLabel"></label>
+        <input id="broker-input" class="net-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" data-i18n-ph="netcfg.brokerPh">
+        <p class="net-hint" data-i18n="netcfg.brokerHint"></p>
+      </div>
+
+      <div id="net-relay" hidden>
+        <label class="field-label" for="relay-input" data-i18n="netcfg.relayLabel"></label>
+        <input id="relay-input" class="net-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" data-i18n-ph="netcfg.relayPh">
+        <p class="net-hint" data-i18n="netcfg.relayHint"></p>
+      </div>
 
       <div class="net-actions">
-        <button id="btn-relay-save" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> <span data-i18n="netcfg.save"></span></button>
-        <button id="btn-relay-clear" class="btn ghost"><i class="fas fa-trash-can"></i> <span data-i18n="netcfg.clear"></span></button>
+        <button id="btn-net-save" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> <span data-i18n="netcfg.save"></span></button>
+        <button id="btn-net-reset" class="btn ghost"><i class="fas fa-rotate-left"></i> <span data-i18n="netcfg.reset"></span></button>
       </div>
 
       <button id="btn-net-test" class="btn btn-block"><i class="fas fa-stethoscope"></i> <span data-i18n="netcfg.test"></span></button>

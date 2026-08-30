@@ -8,6 +8,10 @@ Serve perché due browser dietro NAT non possono parlarsi direttamente. Con il r
 niente da configurare sui router: entrambi i giocatori aprono una connessione **in uscita**, che
 passa ovunque.
 
+**Non e' obbligatorio.** Di default il gioco usa un broker MQTT pubblico e funziona senza
+deployare niente (vedi il README principale). Questo relay serve se vuoi una partita privata e
+un servizio su cui puoi contare, invece di appoggiarti a un broker di test aperto a tutti.
+
 Ci sono due implementazioni della stessa identica logica. Scegline una.
 
 ---
